@@ -1,7 +1,7 @@
 [submodule "external/eigen"]
     ignore = dirty
-    path = external/eigen
-    url = https://github.com/eigenteam/eigen-git-mirror.git
+	path = external/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror
 [submodule "external/opengv"]
     ignore = dirty
     path = external/opengv
@@ -10,3 +10,6 @@
     ignore = dirty
     path = external/Sophus
     url = https://github.com/strasdat/Sophus.git
+[submodule "external/openvg"]
+	path = external/openvg
+	url = https://github.com/laurentkneip/opengv
