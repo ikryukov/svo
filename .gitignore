@@ -212,4 +212,6 @@ FakesAssemblies/
 # Ignore macOS .DS_Store
 .DS_Store
 
-images/
+cmake-build*
+datasets
+.idea
