@@ -1,8 +1,7 @@
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 #include <iostream>
 #include <opencv2/calib3d.hpp>
 
+#include "async_image_loader.h"
 #include "map_point.h"
 #include "bucket.h"
 #include "utils.h"
@@ -13,32 +12,6 @@
 #define MAX_FRAME 4540
 #define MIN_NUM_FEAT 2000
 
-bool loadMonoImage(const char* filePattern, int folderIdx, int fileIdx, cv::Mat& outImg)
-{
-    char fileName[256] = {};
-    sprintf(fileName, filePattern, folderIdx, fileIdx);
-    outImg = cv::imread(fileName);
-    cvtColor(outImg, outImg, cv::COLOR_BGR2GRAY);
-    bool res = outImg.data ? true : false;
-    return res;
-}
-
-bool loadStereoImages(const char* filePattern, int fileIdx, cv::Mat& outImgLeft, cv::Mat& outImgRight)
-{
-    bool res = false;
-    res = loadMonoImage(filePattern, 2, fileIdx, outImgLeft);
-    res &= loadMonoImage(filePattern, 3, fileIdx, outImgRight);
-    return res;
-}
-
-bool loadImages(int fileIdx, cv::Mat& outImgLeft, cv::Mat& outImgRight)
-{
-    const char* FILE_PATTERN = "D:/Programing/coursework/svo/data_odometry_color/dataset/sequences/00/image_%d/%06d.png";
-    bool res = false;
-    res = loadStereoImages(FILE_PATTERN, fileIdx, outImgLeft, outImgRight);
-    return res;
-}
-
 
 int main(int argc, char** argv)
 {
@@ -47,10 +20,9 @@ int main(int argc, char** argv)
     // ------------------------
     // Load first images
     // ------------------------
-    cv::Mat imageLeft_t0;
-    cv::Mat imageRight_t0;
-    loadImages(init_frame_id, imageLeft_t0, imageRight_t0);
+    AsyncImageLoader async_image_loader("D:/Programing/coursework/svo/data_odometry_color/dataset/sequences/00/", true);
 
+    auto [imageLeft_t0, imageRight_t0] = async_image_loader.get();
     if (!imageLeft_t0.data || !imageRight_t0.data)
     {
         std::cout << " --(!) Error reading images " << std::endl;
@@ -108,11 +80,10 @@ int main(int argc, char** argv)
         // ------------
         // Load images
         // ------------
-        cv::Mat imageLeft_t1;
-        cv::Mat imageRight_t1;
-        bool res = loadImages(numFrame, imageLeft_t1, imageRight_t1);
-        if (!res)
+        auto [imageLeft_t1, imageRight_t1] = async_image_loader.get();
+        if (!imageLeft_t1.data || !imageRight_t1.data)
         {
+            std::cout << " --(!) Error reading images " << std::endl;
             break;
         }
 
