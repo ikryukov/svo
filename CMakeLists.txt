@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
+include(FetchContent)
 set (PROJECT VisualOdometry) 
 project (${PROJECT})
 
 find_package( OpenCV 4.0 REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+FetchContent_Declare(
+        readerwriterqueue
+        GIT_REPOSITORY    https://github.com/cameron314/readerwriterqueue
+        GIT_TAG           master
+)
+FetchContent_MakeAvailable(readerwriterqueue)
 
 include_directories(./include)
 
@@ -24,4 +32,4 @@ source_group ("Header Files" FILES ${HEADERS})
 source_group ("Source Files" FILES ${SOURCES})
 
 add_executable( ${PROJECT}  ${HEADERS} ${SOURCES} )
-target_link_libraries( ${PROJECT} ${OpenCV_LIBS} )
+target_link_libraries( ${PROJECT} ${OpenCV_LIBS} readerwriterqueue)

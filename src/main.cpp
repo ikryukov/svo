@@ -20,11 +20,12 @@ int main(int argc, char** argv)
     // ------------------------
     // Load first images
     // ------------------------
-    AsyncImageLoader async_image_loader("D:/Programing/coursework/svo/data_odometry_color/dataset/sequences/00/", true);
+    // TODO set values via config file. Currently hardcoded for first sequence
+    AsyncImageLoader async_image_loader("D:/Programing/coursework/svo/datasets/color/dataset/sequences/00/", 0, MAX_FRAME, MAX_FRAME);
 
-    auto [imageLeft_t0, imageRight_t0] = async_image_loader.get();
-    if (!imageLeft_t0.data || !imageRight_t0.data)
-    {
+    cv::Mat imageLeft_t0, imageRight_t0;
+
+    if (!async_image_loader.get(imageLeft_t0, imageRight_t0)) {
         std::cout << " --(!) Error reading images " << std::endl;
         return -1;
     }
@@ -62,8 +63,6 @@ int main(int argc, char** argv)
     cv::Point2d pp(cx, cy);
     cv::Matx33d K = cv::Matx33d(focal, 0, cx, 0, focal, cy, 0, 0, 1);
 
-    clock_t begin = clock();
-
     cv::Mat trajectory = cv::Mat::zeros(600, 1200, CV_8UC3);
 
     cv::Mat points4D, points3D;
@@ -75,13 +74,15 @@ int main(int argc, char** argv)
 
     for (int numFrame = init_frame_id + 1; numFrame < MAX_FRAME; ++numFrame)
     {
-        std::cout << numFrame << std::endl;
+        clock_t begin = clock();
+        std::cout << std::endl <<  numFrame << std::endl;
 
         // ------------
         // Load images
         // ------------
-        auto [imageLeft_t1, imageRight_t1] = async_image_loader.get();
-        if (!imageLeft_t1.data || !imageRight_t1.data)
+        cv::Mat imageLeft_t1, imageRight_t1;
+
+        if (!async_image_loader.get(imageLeft_t1, imageRight_t1))
         {
             std::cout << " --(!) Error reading images " << std::endl;
             break;
@@ -160,6 +161,7 @@ int main(int argc, char** argv)
         std::vector<cv::Mat> pose_matrix_gt;
 
         display(numFrame, trajectory, pose, pose_matrix_gt, 0.0, false);
+        std::cout << "Frame time: " << static_cast<double>(clock() - begin) / CLOCKS_PER_SEC << std::endl;
     }
 
     return 0;

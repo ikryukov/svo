@@ -10,73 +10,72 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "SPSCQueue.h"
+#include <readerwriterqueue.h>
 
-using namespace rigtorp;
+using namespace moodycamel;
 
 
 class AsyncImageLoader {
 public:
-    explicit AsyncImageLoader(const char* folder, bool color = true):
-            _q(1)
-          , _folder(folder)
-          , _color(color)
-          , _thread([&]() {
-              size_t i_ = 0;
-
-              while (_b) {
-                  // push a new pair of images
+    explicit AsyncImageLoader(const char* folder, size_t start_frame,
+                              size_t last_frame, bool color = true):
+            mStartFrame(start_frame)
+          , mLastFrame(last_frame)
+          , mQueue(last_frame - start_frame)
+          , mDatasetFolder(folder)
+          , mIsColor(color)
+          , mThread([&]() {
+              for(auto i = mStartFrame; (i < mLastFrame) && finish; ++i) {
                   cv::Mat l, r;
-                  bool res = syncLoad(i_, l, r);
-                  i_++;
-                  _q.push({std::move(l), std::move(r)});
-
-                  // wait until queue is empty
-                  while (_q.front() && _b) {}
+                  bool res = syncLoad(i, l, r);
+                  mQueue.emplace(std::move(l), std::move(r));
               }
           })
     {}
 
-    std::pair<cv::Mat, cv::Mat> get() {
-        // wait until something appears in the queue
-        while(!_q.front()) {}
+    bool get(cv::Mat& left, cv::Mat& right) {
+        std::pair<cv::Mat, cv::Mat> temp{};
 
-        // take it
-        auto ret = *_q.front();
-        _q.pop();
-        return ret;
+        while (!mQueue.peek()) {}
+
+        bool res = mQueue.try_dequeue(temp);
+        left = std::move(temp.first);
+        right = std::move(temp.second);
+
+        return res;
     }
 
     ~AsyncImageLoader() {
-        _b = false;
-        _thread.join();
+        finish = false;
+        mThread.join();
     }
 
 private:
     bool syncLoad(size_t i, cv::Mat& left, cv::Mat& right) {
         size_t f1, f2;
-        if (!_color) { f1 = 0; f2 = 1; }
-        else         { f1 = 2; f2 = 3; }
+        if (!mIsColor) { f1 = 0; f2 = 1; }
+        else           { f1 = 2; f2 = 3; }
 
         return loadImg(i, f1, left) & loadImg(i, f2, right);
     }
 
     bool loadImg(size_t i, size_t fIdx, cv::Mat& imgDst) {
         char fileName[128] = {};
-        sprintf(fileName, (_folder + "image_%d/%06d.png").c_str(), fIdx, i);
+        sprintf(fileName, (mDatasetFolder + "image_%d/%06d.png").c_str(), fIdx, i);
         imgDst = cv::imread(fileName);
 
-        if (_color && imgDst.data)
+        if (mIsColor && imgDst.data)
             cv::cvtColor(imgDst, imgDst, cv::COLOR_BGR2GRAY);
 
         return imgDst.data;
     }
 
-    std::atomic<bool> _b = true;
-    SPSCQueue<std::pair<cv::Mat, cv::Mat>> _q;
-    std::thread _thread;
-    const std::string _folder;
-    bool _color;
+    std::atomic<bool> finish = true;
+    ReaderWriterQueue<std::pair<cv::Mat, cv::Mat>> mQueue;
+    std::thread mThread;
+    const std::string mDatasetFolder;
+    bool mIsColor;
+    size_t mStartFrame, mLastFrame;
 };
 
 #endif // ASYNCIMAGELOADER_H_
