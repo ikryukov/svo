@@ -12,22 +12,20 @@
 
 #include <readerwriterqueue.h>
 
-using namespace moodycamel;
 
+using moodycamel::ReaderWriterQueue;
 
 class AsyncImageLoader {
 public:
     explicit AsyncImageLoader(const char* folder, size_t start_frame,
                               size_t last_frame, bool color = true):
-            mStartFrame(start_frame)
-          , mLastFrame(last_frame)
-          , mQueue(last_frame - start_frame)
+            mQueue(last_frame - start_frame)
           , mDatasetFolder(folder)
           , mIsColor(color)
-          , mThread([&]() {
-              for(auto i = mStartFrame; (i < mLastFrame) && finish; ++i) {
+          , mThread([=]() {
+              for(auto i = start_frame; (i < last_frame) && finish; ++i) {
                   cv::Mat l, r;
-                  bool res = syncLoad(i, l, r);
+                  syncLoad(i, l, r);
                   mQueue.emplace(std::move(l), std::move(r));
               }
           })
@@ -75,7 +73,6 @@ private:
     std::thread mThread;
     const std::string mDatasetFolder;
     bool mIsColor;
-    size_t mStartFrame, mLastFrame;
 };
 
 #endif // ASYNCIMAGELOADER_H_

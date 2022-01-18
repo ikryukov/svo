@@ -21,8 +21,7 @@ int main(int argc, char** argv)
     // Load first images
     // ------------------------
     // TODO set values via config file. Currently hardcoded for first sequence
-    AsyncImageLoader async_image_loader("D:/Programing/coursework/svo/datasets/color/dataset/sequences/00/", 0, MAX_FRAME, MAX_FRAME);
-
+    AsyncImageLoader async_image_loader("../../datasets/color/dataset/sequences/00/", 0, MAX_FRAME, MAX_FRAME);
     cv::Mat imageLeft_t0, imageRight_t0;
 
     if (!async_image_loader.get(imageLeft_t0, imageRight_t0)) {
@@ -82,8 +81,7 @@ int main(int argc, char** argv)
         // ------------
         cv::Mat imageLeft_t1, imageRight_t1;
 
-        if (!async_image_loader.get(imageLeft_t1, imageRight_t1))
-        {
+        if (!async_image_loader.get(imageLeft_t1, imageRight_t1)) {
             std::cout << " --(!) Error reading images " << std::endl;
             break;
         }
