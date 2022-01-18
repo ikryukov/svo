@@ -23,7 +23,7 @@ public:
           , mDatasetFolder(folder)
           , mIsColor(color)
           , mThread([=]() {
-              for(auto i = start_frame; (i < last_frame) && finish; ++i) {
+              for(size_t i = start_frame; (i < last_frame) && !mIsFinish; ++i) {
                   cv::Mat l, r;
                   syncLoad(i, l, r);
                   mQueue.emplace(std::move(l), std::move(r));
@@ -44,17 +44,17 @@ public:
     }
 
     ~AsyncImageLoader() {
-        finish = false;
+        mIsFinish = true;
         mThread.join();
     }
 
 private:
     bool syncLoad(size_t i, cv::Mat& left, cv::Mat& right) {
-        size_t f1, f2;
-        if (!mIsColor) { f1 = 0; f2 = 1; }
-        else           { f1 = 2; f2 = 3; }
+        // Directory indexes for both images in KITTI dataset
+        size_t fIdx1 = mIsColor ? 2 : 0,
+               fIdx2 = mIsColor ? 3 : 1;
 
-        return loadImg(i, f1, left) & loadImg(i, f2, right);
+        return loadImg(i, fIdx1, left) & loadImg(i, fIdx2, right);
     }
 
     bool loadImg(size_t i, size_t fIdx, cv::Mat& imgDst) {
@@ -68,7 +68,7 @@ private:
         return imgDst.data;
     }
 
-    std::atomic<bool> finish = true;
+    std::atomic<bool> mIsFinish = false;
     ReaderWriterQueue<std::pair<cv::Mat, cv::Mat>> mQueue;
     std::thread mThread;
     const std::string mDatasetFolder;
