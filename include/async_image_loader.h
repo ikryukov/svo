@@ -17,7 +17,7 @@ using moodycamel::ReaderWriterQueue;
 
 class AsyncImageLoader {
 public:
-    explicit AsyncImageLoader(const char* folder, size_t start_frame,
+    explicit AsyncImageLoader(const std::string folder, size_t start_frame,
                               size_t last_frame, bool color = true):
             mQueue(last_frame - start_frame)
           , mDatasetFolder(folder)
