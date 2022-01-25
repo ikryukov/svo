@@ -2,16 +2,14 @@
 // Created by Smirnov Grigory on 22.01.2022.
 //
 
-#ifndef CONFIG_READER_H
-#define CONFIG_READER_H
+#pragma once
 
 #include <string>
 #include <iostream>
 #include <exception>
 #include <opencv2/core.hpp>
 
-class ConfigReader {
-private:
+struct Config {
     std::string path;
     double focal;
     double cx;
@@ -20,19 +18,24 @@ private:
     int start_frame;
     int end_frame;
     bool show_gt;
+};
+
+class ConfigReader {
+private:
+    Config config;
 public:
-    ConfigReader(std::string filename) {
+    ConfigReader(std::string& filename) {
         try {
-            cv::FileStorage config(filename, cv::FileStorage::READ);
-            if (config.isOpened()) {
-                config["path"] >> path;
-                config["focal"] >> focal;
-                config["cx"] >> cx;
-                config["cy"] >> cy;
-                config["bf"] >> bf;
-                config["start_frame"] >> start_frame;
-                config["end_frame"] >> end_frame;
-                config["show_gt"] >> show_gt;
+            cv::FileStorage fs(filename, cv::FileStorage::READ);
+            if (fs.isOpened()) {
+                fs["path"] >> config.path;
+                fs["focal"] >> config.focal;
+                fs["cx"] >> config.cx;
+                fs["cy"] >> config.cy;
+                fs["bf"] >> config.bf;
+                fs["start_frame"] >> config.start_frame;
+                fs["end_frame"] >> config.end_frame;
+                fs["show_gt"] >> config.show_gt;
             }
         }
         catch (std::exception& e) {
@@ -40,38 +43,8 @@ public:
             std::cout << e.what();
         }
     }
-    const std::string& getPath() const
+    const Config& getConfig() const
     {
-        return path;
-    }
-    double getFocal() const
-    {
-        return focal;
-    }
-    double getCx() const
-    {
-        return cx;
-    }
-    double getCy() const
-    {
-        return cy;
-    }
-    double getBf() const
-    {
-        return bf;
-    }
-    int getStartFrame() const
-    {
-        return start_frame;
-    }
-    int getEndFrame() const
-    {
-        return end_frame;
-    }
-    bool isShowGt() const
-    {
-        return show_gt;
+        return config;
     }
 };
-
-#endif // CONFIG_READER_H
