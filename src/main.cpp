@@ -2,6 +2,7 @@
 #include <opencv2/calib3d.hpp>
 
 #include "async_image_loader.h"
+#include "config_reader.h"
 #include "map_point.h"
 #include "bucket.h"
 #include "utils.h"
@@ -16,12 +17,14 @@
 int main(int argc, char** argv)
 {
     int init_frame_id = 0;
-
+    std::string path = "../../config.yaml";
+    ConfigReader reader(path);
+    Config config = reader.getConfig();
     // ------------------------
     // Load first images
     // ------------------------
     // TODO set values via config file. Currently hardcoded for first sequence
-    AsyncImageLoader async_image_loader("../../datasets/color/dataset/sequences/00/", 0, MAX_FRAME, MAX_FRAME);
+    AsyncImageLoader async_image_loader(config.path, config.start_frame, config.end_frame, true);
     cv::Mat imageLeft_t0, imageRight_t0;
 
     if (!async_image_loader.get(imageLeft_t0, imageRight_t0)) {
@@ -31,20 +34,23 @@ int main(int argc, char** argv)
 
 // TODO: add a fucntion to load these values directly from KITTI's calib files
 // WARNING: different sequences in the KITTI VO dataset have different intrinsic/extrinsic parameters
-#ifdef KITTI
-    double focal = 718.8560;
-    double cx = 607.1928;
-    double cy = 185.2157;
-#else
-    // iPhone X
-    // double focal = 1591.0;// ARkit mode;
-    double focal = 28.0 / 36.0 * 1881.0;
-    double cx = 1065.0 / 2.0;
-    double cy = 1881.0 / 2.0;
-#endif
+//#ifdef KITTI
+//    double focal = 718.8560;
+//    double cx = 607.1928;
+//    double cy = 185.2157;
+//#else
+//    // iPhone X
+//    // double focal = 1591.0;// ARkit mode;
+//    double focal = 28.0 / 36.0 * 1881.0;
+//    double cx = 1065.0 / 2.0;
+//    double cy = 1881.0 / 2.0;
+//#endif
+    double focal = config.focal;
+    double cx = config.cx;
+    double cy = config.cy;
     double fx = focal;
     double fy = focal;
-    double bf = -386.1448;
+    double bf = config.bf;
     const cv::Mat projMatrl = (cv::Mat_<float>(3, 4) << fx, 0., cx, 0., 0., fy, cy, 0., 0, 0., 1., 0.);
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
 //    cout << "P_left: " << endl << projMatrl << endl;

@@ -1,0 +1,9 @@
+%YAML:1.0
+path: ../../datasets/color/sequences/00/
+start_frame: 0
+end_frame: 4540
+show_gt: true
+focal: 718.8560
+cx: 607.1928
+cy: 185.2157
+bf: -386.1448
