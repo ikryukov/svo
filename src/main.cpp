@@ -10,13 +10,13 @@
 #include "utils.h"
 #include "core.h"
 
-#define KITTI
-
-#define MAX_FRAME 4540
-#define MIN_NUM_FEAT 2000
-
 
 int main(int argc, char** argv) {
+    // get values from configuration file
+    std::string path = "../../config.yaml";
+    ConfigReader reader(path);
+    Config config = reader.getConfig();
+
     // variables for metrics tracking
     const size_t totalRAM = getTotalRAM();
     const time_t startTime = clock();
@@ -24,14 +24,11 @@ int main(int argc, char** argv) {
     std::pair<double, int>  maxFrameTime{ INT64_MIN,0 }, minFrameTime{ INT64_MAX, 0 };
     size_t maxRAM = 0;
 
-    bool show_gt = true;
-
-    std::vector<cv::Mat> gt_rotations, gt_translations;
-
     // parse ground truth file
-    if (show_gt) {
-        std::vector<cv::Mat> gt(MAX_FRAME);
-        std::ifstream fin("../../datasets/poses/00.txt");
+    std::vector<cv::Mat> gt_rotations, gt_translations;
+    if (config.show_gt) {
+        std::vector<cv::Mat> gt(config.end_frame);
+        std::ifstream fin(config.gt_path);
 
         if (!fin.is_open()) {
             return -1;
@@ -58,14 +55,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    int init_frame_id = 0;
-    std::string path = "../../config.yaml";
-    ConfigReader reader(path);
-    Config config = reader.getConfig();
     // ------------------------
     // Load first images
     // ------------------------
-    // TODO set values via config file. Currently hardcoded for first sequence
     AsyncImageLoader async_image_loader(config.path, config.start_frame, config.end_frame, true);
     cv::Mat imageLeft_t0, imageRight_t0;
 
@@ -74,19 +66,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-// TODO: add a fucntion to load these values directly from KITTI's calib files
-// WARNING: different sequences in the KITTI VO dataset have different intrinsic/extrinsic parameters
-//#ifdef KITTI
-//    double focal = 718.8560;
-//    double cx = 607.1928;
-//    double cy = 185.2157;
-//#else
-//    // iPhone X
-//    // double focal = 1591.0;// ARkit mode;
-//    double focal = 28.0 / 36.0 * 1881.0;
-//    double cx = 1065.0 / 2.0;
-//    double cy = 1881.0 / 2.0;
-//#endif
     double focal = config.focal;
     double cx = config.cx;
     double cy = config.cy;
@@ -106,8 +85,6 @@ int main(int argc, char** argv) {
 
     cv::Mat frame_pose = cv::Mat::eye(4, 4, CV_64F);
     cv::Mat frame_pose32 = cv::Mat::eye(4, 4, CV_32F);
-
-    cv::Point2d pp(cx, cy);
     cv::Matx33d K = cv::Matx33d(focal, 0, cx, 0, focal, cy, 0, 0, 1);
 
     cv::Mat trajectory = cv::Mat::zeros(600, 1200, CV_8UC3);
@@ -119,10 +96,10 @@ int main(int argc, char** argv) {
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
 
-    for (int numFrame = init_frame_id + 1; numFrame < MAX_FRAME; ++numFrame)
+    for (int numFrame = config.start_frame + 1; numFrame < config.end_frame; ++numFrame)
     {
         clock_t frameStartTime = clock();
-        std::printf("\nFrame #%d / %d\n", numFrame, MAX_FRAME);
+        std::printf("\nFrame #%d / %d\n", numFrame, config.end_frame);
 
         // ------------
         // Load images
@@ -207,7 +184,7 @@ int main(int argc, char** argv) {
         double frameTime = static_cast<double>(clock() - frameStartTime) / CLOCKS_PER_SEC;
         totalFramesTime += frameTime;
 
-        display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, true);
+        display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, config.show_gt);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {
@@ -229,7 +206,7 @@ int main(int argc, char** argv) {
     printSummary(
         maxFrameTime,
         minFrameTime,
-        totalFramesTime / MAX_FRAME,
+        totalFramesTime / config.end_frame,
         total,
         maxRAM
     );

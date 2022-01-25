@@ -54,6 +54,7 @@ void display(int frame_id, const cv::Mat& trajectory, const cv::Mat& pose, const
     int y = int(pose.at<double>(2)) + 100;
     circle(trajectory, cv::Point(x, y), 1, CV_RGB(255, 0, 0), 2);
 
+    // draw ground truth trajectory
     if (show_gt) {
          x = int(gt_translation.at<double>(0)) + 300;
          y = int(gt_translation.at<double>(2)) + 100;
