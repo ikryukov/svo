@@ -7,6 +7,12 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <iostream>
+
+#ifdef _WIN32
+#include "windows.h"
+#include "Psapi.h"
+#endif
 
 bool isRotationMatrix(cv::Mat& R) {
     cv::Mat Rt;
@@ -42,23 +48,16 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R) {
 }
 
 
-void display(int frame_id, cv::Mat& trajectory, cv::Mat& pose, std::vector<cv::Mat>& pose_matrix_gt, float fps, bool show_gt) {
+void display(int frame_id, const cv::Mat& trajectory, const cv::Mat& pose, const cv::Mat& gt_translation, float fps, bool show_gt) {
     // draw estimated trajectory
     int x = int(pose.at<double>(0)) + 300;
     int y = int(pose.at<double>(2)) + 100;
     circle(trajectory, cv::Point(x, y), 1, CV_RGB(255, 0, 0), 2);
 
-    if (show_gt)
-    {
-        // draw ground truth trajectory
-        cv::Mat pose_gt = cv::Mat::zeros(1, 3, CV_64F);
-
-        // pose_gt.at<double>(0) = pose_matrix_gt[frame_id].val[0][3];
-        // pose_gt.at<double>(1) = pose_matrix_gt[frame_id].val[0][7];
-        // pose_gt.at<double>(2) = pose_matrix_gt[frame_id].val[0][11];
-        // x = int(pose_gt.at<double>(0)) + 300;
-        // y = int(pose_gt.at<double>(2)) + 100;
-        // circle(trajectory, cv::Point(x, y) ,1, CV_RGB(255,255,0), 2);
+    if (show_gt) {
+         x = int(gt_translation.at<double>(0)) + 300;
+         y = int(gt_translation.at<double>(2)) + 100;
+         circle(trajectory, cv::Point(x, y) ,1, CV_RGB(0,255,0), 1);
     }
     // print info
 
@@ -96,4 +95,51 @@ void displayTracking(cv::Mat& imageLeft_t1, std::vector<cv::Point2f>& pointsLeft
     }
 
     cv::imshow("vis ", vis);
+}
+
+size_t getTotalRAM() {
+#ifdef _WIN32
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&memInfo);
+    return memInfo.ullTotalPhys / 1024 / 1024;
+#else
+    return 0;
+#endif
+}
+
+size_t getCurrentlyUsedRAM() {
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+    return pmc.WorkingSetSize / 1024 / 1024;
+#else
+    return 0;
+#endif
+}
+
+void printSummary(std::pair<double, int> max, std::pair<double, int> min, double avg, time_t total, size_t maxRAM) {
+    int seconds = static_cast<int>(static_cast<double>(total) / CLOCKS_PER_SEC);
+    int minutes = seconds / 60;
+    int hours = minutes / 60;
+
+    minutes -= hours * 60;
+    seconds -= hours * 60 * 60 + minutes * 60;
+
+    std::printf("\n############################## Summary #################################\n"
+        "-- max memory usage: %lluMbs\n"
+        "-- max / min frame time: [%.3lf, #%d], [%.3lf, #%d]\n"
+        "-- Average frame time: %lf\n"
+        "-- Total time: %02d:%02d:%02d\n",
+
+        maxRAM,
+        max.first,
+        max.second,
+        min.first,
+        min.second,
+        avg,
+        hours,
+        minutes,
+        seconds
+    );
 }
