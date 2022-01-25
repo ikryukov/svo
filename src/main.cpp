@@ -17,7 +17,7 @@
 int main(int argc, char** argv)
 {
     int init_frame_id = 0;
-    std::string path = R"(F:\repos\svo\config.yaml)";
+    std::string path = "../../config.yaml";
     ConfigReader reader(path);
     Config config = reader.getConfig();
     // ------------------------
