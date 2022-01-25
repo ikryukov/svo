@@ -139,7 +139,7 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
     {
         // append new features with old features
         currentVOFeatures.appendNewFeatures(imageLeft_t0);
-        std::cout << "Current feature set size: " << currentVOFeatures.points.size() << std::endl;
+        std::cout << "-- Current feature set size: " << currentVOFeatures.points.size() << std::endl;
     }
 
     const int bucket_size = 64;
@@ -208,7 +208,7 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
                        iterationsCount, reprojectionError, confidence, inliers, flags);
 
     translation = -translation;
-    std::cout << "inliers size: " << inliers.size() << std::endl;
+//    std::cout << "-- inliers size: " << inliers.size() << std::endl;
 }
 
 
@@ -327,7 +327,7 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
     //     valid.push_back(!exist);
 
     // }
-    std::cout << "newPoints size : " << newPoints.size() << std::endl;
+//    std::cout << "newPoints size : " << newPoints.size() << std::endl;
 }
 
 
@@ -352,7 +352,7 @@ void integrateOdometryStereo(int frame_i,
                         (translation_stereo.at<double>(2)) * (translation_stereo.at<double>(2)));
 
     // frame_pose = frame_pose * rigid_body_transformation;
-    std::cout << "scale: " << scale << std::endl;
+//    std::cout << "scale: " << scale << std::endl;
 
     // rigid_body_transformation = rigid_body_transformation.inv();
     // if ((scale>0.1)&&(translation_stereo.at<double>(2) > translation_stereo.at<double>(0)) &&

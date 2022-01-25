@@ -11,6 +11,7 @@
 
 struct Config {
     std::string path;
+    std::string gt_path;
     double focal;
     double cx;
     double cy;
@@ -36,6 +37,7 @@ public:
                 fs["start_frame"] >> config.start_frame;
                 fs["end_frame"] >> config.end_frame;
                 fs["show_gt"] >> config.show_gt;
+                fs["gt_path"] >> config.gt_path;
             }
         }
         catch (std::exception& e) {

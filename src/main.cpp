@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include <opencv2/calib3d.hpp>
 
 #include "async_image_loader.h"
@@ -8,22 +10,54 @@
 #include "utils.h"
 #include "core.h"
 
-#define KITTI
 
-#define MAX_FRAME 4540
-#define MIN_NUM_FEAT 2000
-
-
-int main(int argc, char** argv)
-{
-    int init_frame_id = 0;
+int main(int argc, char** argv) {
+    // get values from configuration file
     std::string path = "../../config.yaml";
     ConfigReader reader(path);
     Config config = reader.getConfig();
+
+    // variables for metrics tracking
+    const size_t totalRAM = getTotalRAM();
+    const time_t startTime = clock();
+    double totalFramesTime = 0;
+    std::pair<double, int>  maxFrameTime{ INT64_MIN,0 }, minFrameTime{ INT64_MAX, 0 };
+    size_t maxRAM = 0;
+
+    // parse ground truth file
+    std::vector<cv::Mat> gt_rotations, gt_translations;
+    if (config.show_gt) {
+        std::vector<cv::Mat> gt(config.end_frame);
+        std::ifstream fin(config.gt_path);
+
+        if (!fin.is_open()) {
+            return -1;
+        }
+
+        std::string matrxStr;
+        while (std::getline(fin, matrxStr, '\n')) {
+            std::stringstream ss(std::move(matrxStr));
+            double pose[12] = { 0 };
+            for (auto& elem : pose) { ss >> elem; }
+
+            gt_rotations.emplace_back(
+                (cv::Mat_<double>(3, 3) <<
+                    pose[0], pose[1], pose[2],
+                    pose[4], pose[5], pose[6],
+                    pose[8], pose[9], pose[10])
+            );
+            gt_translations.emplace_back(
+                cv::Mat({
+                    pose[3],
+                    pose[7],
+                    pose[11] })
+            );
+        }
+    }
+
     // ------------------------
     // Load first images
     // ------------------------
-    // TODO set values via config file. Currently hardcoded for first sequence
     AsyncImageLoader async_image_loader(config.path, config.start_frame, config.end_frame, true);
     cv::Mat imageLeft_t0, imageRight_t0;
 
@@ -32,19 +66,6 @@ int main(int argc, char** argv)
         return -1;
     }
 
-// TODO: add a fucntion to load these values directly from KITTI's calib files
-// WARNING: different sequences in the KITTI VO dataset have different intrinsic/extrinsic parameters
-//#ifdef KITTI
-//    double focal = 718.8560;
-//    double cx = 607.1928;
-//    double cy = 185.2157;
-//#else
-//    // iPhone X
-//    // double focal = 1591.0;// ARkit mode;
-//    double focal = 28.0 / 36.0 * 1881.0;
-//    double cx = 1065.0 / 2.0;
-//    double cy = 1881.0 / 2.0;
-//#endif
     double focal = config.focal;
     double cx = config.cx;
     double cy = config.cy;
@@ -64,8 +85,6 @@ int main(int argc, char** argv)
 
     cv::Mat frame_pose = cv::Mat::eye(4, 4, CV_64F);
     cv::Mat frame_pose32 = cv::Mat::eye(4, 4, CV_32F);
-
-    cv::Point2d pp(cx, cy);
     cv::Matx33d K = cv::Matx33d(focal, 0, cx, 0, focal, cy, 0, 0, 1);
 
     cv::Mat trajectory = cv::Mat::zeros(600, 1200, CV_8UC3);
@@ -77,10 +96,10 @@ int main(int argc, char** argv)
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
 
-    for (int numFrame = init_frame_id + 1; numFrame < MAX_FRAME; ++numFrame)
+    for (int numFrame = config.start_frame + 1; numFrame < config.end_frame; ++numFrame)
     {
-        clock_t begin = clock();
-        std::cout << std::endl <<  numFrame << std::endl;
+        clock_t frameStartTime = clock();
+        std::printf("\nFrame #%d / %d\n", numFrame, config.end_frame);
 
         // ------------
         // Load images
@@ -92,7 +111,7 @@ int main(int argc, char** argv)
             break;
         }
 
-        std::vector<cv::Point2f> oldPointsLeft_t0 = currentVOFeatures.points;
+//        std::vector<cv::Point2f> oldPointsLeft_t0 = currentVOFeatures.points;
 
         std::vector<cv::Point2f> pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1;
 
@@ -105,8 +124,8 @@ int main(int argc, char** argv)
         std::vector<cv::Point2f>& currentPointsLeft_t0 = pointsLeft_t0;
         std::vector<cv::Point2f>& currentPointsLeft_t1 = pointsLeft_t1;
 
-        std::cout << "oldPointsLeft_t0 size : " << oldPointsLeft_t0.size() << std::endl;
-        std::cout << "currentFramePointsLeft size : " << currentPointsLeft_t0.size() << std::endl;
+//        std::cout << "oldPointsLeft_t0 size : " << oldPointsLeft_t0.size() << std::endl;
+//        std::cout << "currentFramePointsLeft size : " << currentPointsLeft_t0.size() << std::endl;
 
         // ---------------------
         // Triangulate 3D Points
@@ -138,7 +157,7 @@ int main(int argc, char** argv)
         distinguishNewPoints(newPoints, valid, mapPoints, numFrame - 1, points3D_t0, points3D_t1, points3D,
                              currentPointsLeft_t0, currentPointsLeft_t1, currentFeaturePointsLeft, oldFeaturePointsLeft);
         oldFeaturePointsLeft = currentFeaturePointsLeft;
-        std::cout << "mapPoints size : " << mapPoints.size() << std::endl;
+        std::printf("-- Map points size: %llu\n", mapPoints.size());
 
         // ------------------------------------------------
         // Append feature points to Point clouds
@@ -158,15 +177,39 @@ int main(int argc, char** argv)
             std::cout << "Too large rotation" << std::endl;
         }
 
-        Rpose = frame_pose(cv::Range(0, 3), cv::Range(0, 3));
-        cv::Vec3f Rpose_euler = rotationMatrixToEulerAngles(Rpose);
+//        Rpose = frame_pose(cv::Range(0, 3), cv::Range(0, 3));
+//        cv::Vec3f Rpose_euler = rotationMatrixToEulerAngles(Rpose);
         pose = frame_pose.col(3).clone();
 
-        std::vector<cv::Mat> pose_matrix_gt;
+        double frameTime = static_cast<double>(clock() - frameStartTime) / CLOCKS_PER_SEC;
+        totalFramesTime += frameTime;
 
-        display(numFrame, trajectory, pose, pose_matrix_gt, 0.0, false);
-        std::cout << "Frame time: " << static_cast<double>(clock() - begin) / CLOCKS_PER_SEC << std::endl;
+        display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, config.show_gt);
+
+        size_t ramInUse = getCurrentlyUsedRAM();
+        if (frameTime > maxFrameTime.first) {
+            maxFrameTime = { frameTime, numFrame };
+        }
+        if (frameTime < minFrameTime.first) {
+            minFrameTime = { frameTime, numFrame };
+        }
+        if (maxRAM < ramInUse) {
+            maxRAM = ramInUse;
+        }
+
+        // print some metrics
+        std::printf("-- Memory usage: %lluMbs / %lluMbs\n", ramInUse, totalRAM);
+        std::printf("-- Frame time: %.3lfs\n", frameTime);
     }
+    time_t total = clock() - startTime;
+
+    printSummary(
+        maxFrameTime,
+        minFrameTime,
+        totalFramesTime / config.end_frame,
+        total,
+        maxRAM
+    );
 
     return 0;
 }
