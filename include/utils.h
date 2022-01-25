@@ -7,9 +7,6 @@
 
 #include <opencv2/core/mat.hpp>
 
-#include "windows.h"
-#include "Psapi.h"
-
 
 bool isRotationMatrix(cv::Mat& R);
 
