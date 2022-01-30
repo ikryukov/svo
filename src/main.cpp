@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 
     // variables for metrics tracking
     const size_t totalRAM = getTotalRAM();
-    const time_t startTime = clock();
+    const Timer::time_point startTime = Timer::set();
     double totalFramesTime = 0;
     std::pair<double, int>  maxFrameTime{ INT64_MIN,0 }, minFrameTime{ INT64_MAX, 0 };
     size_t maxRAM = 0;
@@ -74,8 +74,6 @@ int main(int argc, char** argv) {
     double bf = config.bf;
     const cv::Mat projMatrl = (cv::Mat_<float>(3, 4) << fx, 0., cx, 0., 0., fy, cy, 0., 0, 0., 1., 0.);
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
-//    cout << "P_left: " << endl << projMatrl << endl;
-//    cout << "P_right: " << endl << projMatrr << endl;
 
     cv::Mat rotation = cv::Mat::eye(3, 3, CV_64F);
     cv::Mat translation_stereo = cv::Mat::zeros(3, 1, CV_64F);
@@ -83,7 +81,15 @@ int main(int argc, char** argv) {
     cv::Mat pose = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat Rpose = cv::Mat::eye(3, 3, CV_64F);
 
-    cv::Mat frame_pose = cv::Mat::eye(4, 4, CV_64F);
+    // initialize start position with ground truth, for visualisation
+    cv::Mat frame_pose;
+    if (config.show_gt && config.start_frame != 0) {
+        cv::hconcat(gt_rotations[config.start_frame], gt_translations[config.start_frame], frame_pose);
+        cv::vconcat(frame_pose, cv::Matx<double, 1, 4>(0,0,0,0), frame_pose);
+    } else {
+        frame_pose = cv::Mat::eye(4, 4, CV_64F);
+    }
+
     cv::Mat frame_pose32 = cv::Mat::eye(4, 4, CV_32F);
     cv::Matx33d K = cv::Matx33d(focal, 0, cx, 0, focal, cy, 0, 0, 1);
 
@@ -98,7 +104,7 @@ int main(int argc, char** argv) {
 
     for (int numFrame = config.start_frame + 1; numFrame < config.end_frame; ++numFrame)
     {
-        clock_t frameStartTime = clock();
+        Timer::time_point frameStart = Timer::set();
         std::printf("\nFrame #%d / %d\n", numFrame, config.end_frame);
 
         // ------------
@@ -181,7 +187,7 @@ int main(int argc, char** argv) {
 //        cv::Vec3f Rpose_euler = rotationMatrixToEulerAngles(Rpose);
         pose = frame_pose.col(3).clone();
 
-        double frameTime = static_cast<double>(clock() - frameStartTime) / CLOCKS_PER_SEC;
+        double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
 
         display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, config.show_gt);
@@ -199,14 +205,14 @@ int main(int argc, char** argv) {
 
         // print some metrics
         std::printf("-- Memory usage: %lluMbs / %lluMbs\n", ramInUse, totalRAM);
-        std::printf("-- Frame time: %.3lfs\n", frameTime);
+        std::printf("-T Frame time: %.3lfs\n", frameTime);
     }
-    time_t total = clock() - startTime;
+    double total = Timer::get<Timer::seconds>(startTime).count();
 
     printSummary(
         maxFrameTime,
         minFrameTime,
-        totalFramesTime / config.end_frame,
+        totalFramesTime / (config.end_frame - config.start_frame),
         total,
         maxRAM
     );
