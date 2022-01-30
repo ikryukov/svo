@@ -8,6 +8,10 @@
 #include <iostream>
 
 #include "core.h"
+#include "utils.h"
+#include "map_point.h"
+#include "bucket.h"
+#include "config_reader.h"
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -112,18 +116,18 @@ void checkValidMatch(const std::vector<cv::Point2f>& points,
 
 
 void removeInvalidPoints(std::vector<cv::Point2f>& points, const std::vector<bool>& status) {
-    int index = 0;
+    assert(points.size() == status.size());
+
+    std::vector<cv::Point2f> ret;
+    ret.reserve(points.size());
     for (int i = 0; i < status.size(); ++i)
     {
-        if (status[i] == false)
+        if (status[i])
         {
-            points.erase(points.begin() + index);
-        }
-        else
-        {
-            ++index;
+            ret.push_back(points[i]);
         }
     }
+    points = std::move(ret);
 }
 
 
@@ -132,16 +136,54 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
                       cv::Mat& imageLeft_t1,
                       cv::Mat& imageRight_t1,
                       FeatureSet& currentVOFeatures,
-                      std::vector<MapPoint> MapPoints,
+                      std::vector<MapPoint>& MapPoints,
                       std::vector<cv::Point2f>& pointsLeft_t0,
                       std::vector<cv::Point2f>& pointsRight_t0,
                       std::vector<cv::Point2f>& pointsLeft_t1,
-                      std::vector<cv::Point2f>& pointsRight_t1)
+                      std::vector<cv::Point2f>& pointsRight_t1,
+                      const Config& config)
 {
+    // Choose detector
+    static cv::Ptr<cv::FeatureDetector> detector;
+    if (!detector) {
+        if (config.use_orb) {
+            // Parameters that are not set via the configuration file
+            int edge_threshold = config.orb_params.patch_size;
+            int first_level = 0;
+            int WTA_K = 4;
+            cv::ORB::ScoreType score_type = cv::ORB::FAST_SCORE;
+
+            detector = cv::ORB::create(
+                config.orb_params.nfeatures,
+                config.orb_params.scale_factor,
+                config.orb_params.pyr_levels,
+                edge_threshold,
+                first_level,
+                WTA_K,
+                score_type,
+                config.orb_params.patch_size,
+                config.orb_params.fast_treshold
+            );
+        } else {
+            detector = cv::FastFeatureDetector::create(
+                config.fast_params.threshold,
+                config.fast_params.nonMaxSuppression
+            );
+        }
+    }
+
     if (currentVOFeatures.size() < 2000)
     {
+        // detect new features
+        std::vector<cv::KeyPoint> keypoints;
+        std::vector<cv::Point2f> new_features;
+        auto t = Timer::set();
+        detector->detect(imageLeft_t0, keypoints);
+        std::cout << "-T Detection time: " << Timer::get(t) << std::endl;
+        cv::KeyPoint::convert(keypoints, new_features, std::vector<int>());
+
         // append new features with old features
-        currentVOFeatures.appendNewFeatures(imageLeft_t0);
+        currentVOFeatures.appendNewFeatures(new_features);
         std::cout << "-- Current feature set size: " << currentVOFeatures.points.size() << std::endl;
     }
 
