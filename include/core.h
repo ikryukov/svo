@@ -7,8 +7,11 @@
 
 #include <opencv2/core/mat.hpp>
 
-#include "bucket.h"
-#include "map_point.h"
+
+struct FeatureSet;
+class MapPoint;
+struct Config;
+struct FeaturePoint;
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -49,11 +52,12 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
                       cv::Mat& imageLeft_t1,
                       cv::Mat& imageRight_t1,
                       FeatureSet& currentVOFeatures,
-                      std::vector<MapPoint> MapPoints,
+                      std::vector<MapPoint>& MapPoints,
                       std::vector<cv::Point2f>& pointsLeft_t0,
                       std::vector<cv::Point2f>& pointsRight_t0,
                       std::vector<cv::Point2f>& pointsLeft_t1,
-                      std::vector<cv::Point2f>& pointsRight_t1);
+                      std::vector<cv::Point2f>& pointsRight_t1,
+                      const Config& config);
 
 
 void trackingFrame2Frame(const cv::Mat& projMatrl,

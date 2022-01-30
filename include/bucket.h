@@ -5,7 +5,6 @@
 
 #include <vector>
 
-void featureDetectionFast(cv::Mat& image, std::vector<cv::Point2f>& points);
 
 struct FeaturePoint
 {
@@ -19,7 +18,7 @@ struct FeatureSet
     [[nodiscard]] int size() const;
     void clear();
 
-    void appendNewFeatures(cv::Mat& image);
+    void appendNewFeatures(const std::vector<cv::Point2f>& features);
     void bucketingFeatures(cv::Mat& image, int bucket_size, int features_per_bucket);
 
     friend class Bucket;

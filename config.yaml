@@ -8,3 +8,18 @@ focal: 718.8560
 cx: 607.1928
 cy: 185.2157
 bf: -386.1448
+
+# If 1, use ORB as feature detector, otherwise FAST
+use_orb: 1
+orb_params: {
+        nfeatures: 500,
+        scale_factor: 1.2,
+        pyr_levels: 8,
+        patch_size: 31,
+        fast_treshold: 20
+    }
+
+fast_params: {
+        threshold: 20,
+        nonmaxsuppression: true
+    }

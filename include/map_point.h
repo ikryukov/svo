@@ -3,6 +3,7 @@
 
 #include <opencv2/core/mat.hpp>
 
+#include <utility>
 #include <vector>
 
 
@@ -17,14 +18,14 @@ class MapPoint
 {
 public:
     // MapPoint();
-    MapPoint(int id, cv::Mat worldPos) {
-        mId = id;
-        mWorldPos = worldPos;
-    }
+    MapPoint(int id, cv::Mat worldPos)
+        : mId(id)
+        , mWorldPos(std::move(worldPos))
+    {}
 
     ~MapPoint() = default;
 
-    void addObservation(Observation observation) {
+    void addObservation(const Observation& observation) {
         mObservations.push_back(observation);
     }
 

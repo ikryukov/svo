@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
         std::vector<cv::Point2f> pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1;
 
         matchingFeatures(imageLeft_t0, imageRight_t0, imageLeft_t1, imageRight_t1, currentVOFeatures, mapPoints,
-                         pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1);
+                         pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1, config);
 
         imageLeft_t0 = imageLeft_t1;
         imageRight_t0 = imageRight_t1;

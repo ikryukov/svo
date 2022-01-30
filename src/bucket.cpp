@@ -1,20 +1,10 @@
 //
 // Created by Alexey on 17.01.2022.
 //
-
-#include <opencv2/features2d.hpp>
+#include <opencv2/core/mat.hpp>
 
 #include "bucket.h"
 
-
-void featureDetectionFast(cv::Mat& image, std::vector<cv::Point2f>& points) {
-    // uses FAST as for feature dection, modify parameters as necessary
-    std::vector<cv::KeyPoint> keypoints;
-    int fast_threshold = 20;
-    bool nonmaxSuppression = true;
-    cv::FAST(image, keypoints, fast_threshold, nonmaxSuppression);
-    cv::KeyPoint::convert(keypoints, points, std::vector<int>());
-}
 
 int FeatureSet::size() const {
     return points.size();
@@ -25,11 +15,9 @@ void FeatureSet::clear() {
     ages.clear();
 }
 
-void FeatureSet::appendNewFeatures(cv::Mat& image) {
-    std::vector<cv::Point2f> points_new;
-    featureDetectionFast(image, points_new);
-    points.insert(points.end(), points_new.begin(), points_new.end());
-    std::vector<int> ages_new(points_new.size(), 0);
+void FeatureSet::appendNewFeatures(const std::vector<cv::Point2f>& features) {
+    points.insert(points.end(), features.begin(), features.end());
+    std::vector<int> ages_new(features.size(), 0);
     ages.insert(ages.end(), ages_new.begin(), ages_new.end());
 }
 
