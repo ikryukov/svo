@@ -14,6 +14,9 @@
 #include "Psapi.h"
 #endif
 
+#include "utils.h"
+
+
 bool isRotationMatrix(cv::Mat& R) {
     cv::Mat Rt;
     cv::transpose(R, Rt);
@@ -119,8 +122,8 @@ size_t getCurrentlyUsedRAM() {
 #endif
 }
 
-void printSummary(std::pair<double, int> max, std::pair<double, int> min, double avg, time_t total, size_t maxRAM) {
-    int seconds = static_cast<int>(static_cast<double>(total) / CLOCKS_PER_SEC);
+void printSummary(std::pair<double, int> max, std::pair<double, int> min, double avg, double total, size_t maxRAM) {
+    int seconds = (int)total;
     int minutes = seconds / 60;
     int hours = minutes / 60;
 

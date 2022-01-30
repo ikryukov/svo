@@ -67,6 +67,7 @@ void circularMatching(cv::Mat& img_l_0,
                       std::vector<cv::Point2f>& points_l_0_return,
                       FeatureSet& current_features) {
     // this function automatically gets rid of points for which tracking fails
+    auto t = Timer::set();
 
     std::vector<float> err;
     cv::Size winSize = cv::Size(21, 21);
@@ -84,6 +85,8 @@ void circularMatching(cv::Mat& img_l_0,
 
     deleteUnmatchFeaturesCircle(points_l_0, points_r_0, points_r_1, points_l_1, points_l_0_return, status0, status1,
                                 status2, status3, current_features.ages);
+
+    std::cout << "-T circularMatching() time: " << Timer::get(t) << std::endl;
 }
 
 
