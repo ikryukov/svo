@@ -11,6 +11,26 @@
 
 #include "map_point.h"
 
+void drawRectange(const cv::Point3f& center/*, const cv::Mat& rotation*/) {
+    float vertices[3][3] = {{center.x-0.5f, center.y-0.5f, center.z+0.0f},
+                             {center.x+0.5f, center.y-0.5f, center.z+0.0f},
+                             {center.x+0.0f, center.y+0.5f, center.z+0.0f}};
+
+   //cv::Mat M = cv::Mat(3, 3, CV_64F, vertices).inv();
+
+    // This buffer contains floating point vertices with 3 dimensions.
+    // They starts from the 0th element and are packed without padding.
+    glVertexPointer(3, GL_FLOAT, 0, vertices);
+
+    // Use Them!
+    glEnableClientState(GL_VERTEX_ARRAY);
+
+    // Connect the first 3 of these vertices to form a triangle!
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // Disable the stuff we enabled...
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
 
 void Drawer::drawCubeAt(const cv::Point3f& center, float edgeLength) {
     const float e = edgeLength / 2;
@@ -51,7 +71,8 @@ void Drawer::drawCurrentPose() {
     if (!pose.empty()) {
         glColor4f(1., 0., 0., 1.0);
         cv::Point3d point_3_f { pose.at<double>(0), pose.at<double>(1), pose.at<double>(2) };
-        drawCubeAt(point_3_f, 1);
+        //drawCubeAt(point_3_f, 1);
+        drawRectange(point_3_f);
     }
 }
 

@@ -90,7 +90,7 @@ void circularMatching(cv::Mat& img_l_0,
     deleteUnmatchFeaturesCircle(points_l_0, points_r_0, points_r_1, points_l_1, points_l_0_return, status0, status1,
                                 status2, status3, current_features.ages);
 
-    std::cout << "-T circularMatching() time: " << Timer::get(t) << std::endl;
+    std::cout << "-T circularMatching() time: " << Timer::get(t).count() << "ms" << std::endl;
 }
 
 
@@ -179,7 +179,7 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
         std::vector<cv::Point2f> new_features;
         auto t = Timer::set();
         detector->detect(imageLeft_t0, keypoints);
-        std::cout << "-T Detection time: " << Timer::get(t) << std::endl;
+        std::cout << "-T Detection time: " << Timer::get(t).count() << "ms" << std::endl;
         cv::KeyPoint::convert(keypoints, new_features, std::vector<int>());
 
         // append new features with old features
