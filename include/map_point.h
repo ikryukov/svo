@@ -29,12 +29,11 @@ public:
         mObservations.push_back(observation);
     }
 
+    cv::Mat mWorldPos;
 private:
     int mId;
 
     // Position in absolute coordinates
-    cv::Mat mWorldPos;
-
     // std::map<Frame*, size_t> mObservations;
     std::vector<Observation> mObservations;
 };

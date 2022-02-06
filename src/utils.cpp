@@ -26,7 +26,6 @@ bool isRotationMatrix(cv::Mat& R) {
     return cv::norm(I, shouldBeIdentity) < 1e-6;
 }
 
-
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R) {
     assert(isRotationMatrix(R));
 
@@ -48,30 +47,6 @@ cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R) {
         z = 0;
     }
     return cv::Vec3f(x, y, z);
-}
-
-
-void display(int frame_id, const cv::Mat& trajectory, const cv::Mat& pose, const cv::Mat& gt_translation, float fps, bool show_gt) {
-    // draw estimated trajectory
-    int x = int(pose.at<double>(0)) + 300;
-    int y = int(pose.at<double>(2)) + 100;
-    circle(trajectory, cv::Point(x, y), 1, CV_RGB(255, 0, 0), 2);
-
-    // draw ground truth trajectory
-    if (show_gt) {
-         x = int(gt_translation.at<double>(0)) + 300;
-         y = int(gt_translation.at<double>(2)) + 100;
-         circle(trajectory, cv::Point(x, y) ,1, CV_RGB(0,255,0), 1);
-    }
-    // print info
-
-    // rectangle( traj, Point(10, 30), Point(550, 50), CV_RGB(0,0,0), CV_FILLED);
-    // sprintf(text, "FPS: %02f", fps);
-    // putText(traj, text, textOrg, fontFace, fontScale, Scalar::all(255), thickness, 8);
-
-    cv::imshow("Trajectory", trajectory);
-
-    cv::waitKey(1);
 }
 
 void displayTracking(cv::Mat& imageLeft_t1, std::vector<cv::Point2f>& pointsLeft_t0, std::vector<cv::Point2f>& pointsLeft_t1) {
@@ -99,6 +74,7 @@ void displayTracking(cv::Mat& imageLeft_t1, std::vector<cv::Point2f>& pointsLeft
     }
 
     cv::imshow("vis ", vis);
+    cv::waitKey(1);
 }
 
 size_t getTotalRAM() {

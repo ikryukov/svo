@@ -9,6 +9,7 @@
 #include "bucket.h"
 #include "utils.h"
 #include "core.h"
+#include "drawer.h"
 
 
 int main(int argc, char** argv) {
@@ -98,6 +99,7 @@ int main(int argc, char** argv) {
     cv::Mat points4D, points3D;
     FeatureSet currentVOFeatures;
     std::vector<MapPoint> mapPoints;
+    Drawer drawer;
 
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
@@ -190,7 +192,8 @@ int main(int argc, char** argv) {
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
 
-        display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, config.show_gt);
+        drawer.addMapPoints(mapPoints);
+        drawer.addCurrentPose(pose, rotation);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {
