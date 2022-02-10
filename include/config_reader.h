@@ -65,6 +65,10 @@ public:
                fast_params["threshold"] >> config.fast_params.threshold;
                fast_params["nonMaxSuppression"] >> config.fast_params.nonMaxSuppression;
             }
+            else
+            {
+                std::cout << "Unable to open config file: " << filename << std::endl;
+            }
         }
         catch (std::exception& e) {
             std::cout << "Wrong config file!" << std::endl;
