@@ -21,6 +21,7 @@ void Drawer::drawMapPoints() {
 }
 
 void Drawer::drawTrajectory() {
+    glBegin(GL_LINES);
     for (auto& pose : poses)
     {
         // draw three axes of each pose
@@ -28,7 +29,6 @@ void Drawer::drawTrajectory() {
         Eigen::Vector3d Xw = pose * (0.1 * Eigen::Vector3d(1, 0, 0));
         Eigen::Vector3d Yw = pose * (0.1 * Eigen::Vector3d(0, 1, 0));
         Eigen::Vector3d Zw = pose * (0.1 * Eigen::Vector3d(0, 0, 1));
-        glBegin(GL_LINES);
         glColor3f(1.0, 0.0, 0.0);
         glVertex3d(Ow[0], Ow[1], Ow[2]);
         glVertex3d(Xw[0], Xw[1], Xw[2]);
@@ -38,18 +38,17 @@ void Drawer::drawTrajectory() {
         glColor3f(0.0, 0.0, 1.0);
         glVertex3d(Ow[0], Ow[1], Ow[2]);
         glVertex3d(Zw[0], Zw[1], Zw[2]);
-        glEnd();
     }
     // draw a connection
     for (size_t i = 1; i < poses.size(); i++)
     {
-        glColor3f(0.0, 0.0, 0.0);
-        glBegin(GL_LINES);
-        auto p1 = poses[i-1], p2 = poses[i];
-        glVertex3d(p1.translation()[0], p1.translation()[1], p1.translation()[2]);
-        glVertex3d(p2.translation()[0], p2.translation()[1], p2.translation()[2]);
-        glEnd();
+        glColor3f(1.0, 1.0, 1.0);
+        auto t1 = poses[i-1].translation(),
+             t2 = poses[i].translation();
+        glVertex3d(t1[0], t1[1], t1[2]);
+        glVertex3d(t2[0], t2[1], t2[2]);
     }
+    glEnd();
 }
 
 /////////////////////////////////////////////////////// Drawer ///////////////////////////////////////////////////////

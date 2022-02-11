@@ -32,7 +32,6 @@ private:
     std::atomic<bool> mIsFinish = false;
     std::mutex mDrawerMutex;
     std::thread mThread;
-    std::vector<cv::Point3f> mFeatures;
     std::vector<float> mMapPoints;
     std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> poses;
 };
