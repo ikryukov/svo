@@ -15,7 +15,6 @@
 #endif
 
 #include "utils.h"
-#include "pangolin/display/display.h"
 #include "pangolin/gl/opengl_render_state.h"
 
 
@@ -126,16 +125,16 @@ void printSummary(std::pair<double, int> max, std::pair<double, int> min, double
     );
 }
 
-inline double SIGN(double x) {
+inline double sign(double x) {
     return (x >= 0.0f) ? +1.0f : -1.0f;
 }
 
-inline double NORM(double a, double b, double c, double d) {
+inline double norm(double a, double b, double c, double d) {
     return sqrt(a * a + b * b + c * c + d * d);
 }
 
 // quaternion = [w, x, y, z]'
-Eigen::Isometry3d mRot2Quat(const cv::Mat& m) {
+Eigen::Isometry3d rotation2quaternion(const cv::Mat& m) {
     double r11 = m.at<double>(0, 0);
     double r12 = m.at<double>(0, 1);
     double r13 = m.at<double>(0, 2);
@@ -167,38 +166,37 @@ Eigen::Isometry3d mRot2Quat(const cv::Mat& m) {
     q3 = sqrt(q3);
     if (q0 >= q1 && q0 >= q2 && q0 >= q3) {
         q0 *= +1.0f;
-        q1 *= SIGN(r32 - r23);
-        q2 *= SIGN(r13 - r31);
-        q3 *= SIGN(r21 - r12);
+        q1 *= sign(r32 - r23);
+        q2 *= sign(r13 - r31);
+        q3 *= sign(r21 - r12);
     }
     else if (q1 >= q0 && q1 >= q2 && q1 >= q3) {
-        q0 *= SIGN(r32 - r23);
+        q0 *= sign(r32 - r23);
         q1 *= +1.0f;
-        q2 *= SIGN(r21 + r12);
-        q3 *= SIGN(r13 + r31);
+        q2 *= sign(r21 + r12);
+        q3 *= sign(r13 + r31);
     }
     else if (q2 >= q0 && q2 >= q1 && q2 >= q3) {
-        q0 *= SIGN(r13 - r31);
-        q1 *= SIGN(r21 + r12);
+        q0 *= sign(r13 - r31);
+        q1 *= sign(r21 + r12);
         q2 *= +1.0f;
-        q3 *= SIGN(r32 + r23);
+        q3 *= sign(r32 + r23);
     }
     else if (q3 >= q0 && q3 >= q1 && q3 >= q2) {
-        q0 *= SIGN(r21 - r12);
-        q1 *= SIGN(r31 + r13);
-        q2 *= SIGN(r32 + r23);
+        q0 *= sign(r21 - r12);
+        q1 *= sign(r31 + r13);
+        q2 *= sign(r32 + r23);
         q3 *= +1.0f;
     }
     else {
         printf("coding error\n");
     }
-    double r = NORM(q0, q1, q2, q3);
+    double r = norm(q0, q1, q2, q3);
     q0 /= r;
     q1 /= r;
     q2 /= r;
     q3 /= r;
 
-    Eigen::Isometry3d res(Eigen::Quaternion(q0, q1, q2, q3));
-    return res;
+    return Eigen::Isometry3d(Eigen::Quaternion(q0, q1, q2, q3));
 }
 

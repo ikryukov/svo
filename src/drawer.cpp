@@ -11,53 +11,6 @@
 
 #include "map_point.h"
 
-void drawRectange(const cv::Point3f& center/*, const cv::Mat& rotation*/) {
-    float vertices[3][3] = {{center.x-0.5f, center.y-0.5f, center.z+0.0f},
-                             {center.x+0.5f, center.y-0.5f, center.z+0.0f},
-                             {center.x+0.0f, center.y+0.5f, center.z+0.0f}};
-
-   //cv::Mat M = cv::Mat(3, 3, CV_64F, vertices).inv();
-
-    // This buffer contains floating point vertices with 3 dimensions.
-    // They starts from the 0th element and are packed without padding.
-    glVertexPointer(3, GL_FLOAT, 0, vertices);
-
-    // Use Them!
-    glEnableClientState(GL_VERTEX_ARRAY);
-
-    // Connect the first 3 of these vertices to form a triangle!
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    // Disable the stuff we enabled...
-    glDisableClientState(GL_VERTEX_ARRAY);
-}
-
-void Drawer::drawCubeAt(const cv::Point3f& center, float edgeLength) {
-    const float e = edgeLength / 2;
-
-    const float cx = center.x;
-    const float cy = center.y;
-    const float cz = center.z;
-
-    const GLfloat verts[] {
-        cx-e, cy-e, cz-e, cx-e, cy+e, cz-e, cx-e, cy+e, cz+e, cx-e, cy-e, cz+e,
-        cx+e, cy-e, cz-e, cx+e, cy+e, cz-e, cx+e, cy+e, cz+e, cx+e, cy-e, cz+e,
-        cx-e, cy+e, cz-e, cx+e, cy+e, cz-e, cx-e, cy+e, cz+e, cx+e, cy+e, cz+e,
-        cx-e, cy-e, cz-e, cx+e, cy-e, cz-e, cx-e, cy-e, cz+e, cx+e, cy-e, cz+e
-    };
-
-    glVertexPointer(3, GL_FLOAT, 0, verts);
-    glEnableClientState(GL_VERTEX_ARRAY);
-
-    glDrawArrays(GL_LINE_LOOP, 0, 4);
-    glDrawArrays(GL_LINE_LOOP, 4, 4);
-    glDrawArrays(GL_LINES, 8, 2);
-    glDrawArrays(GL_LINES, 10, 2);
-    glDrawArrays(GL_LINES, 12, 2);
-    glDrawArrays(GL_LINES, 14, 2);
-
-    glDisableClientState(GL_VERTEX_ARRAY);
-}
 
 void Drawer::drawMapPoints() {
     glColor4f(0., 0., 1., 1.0);
@@ -68,13 +21,13 @@ void Drawer::drawMapPoints() {
 }
 
 void Drawer::drawTrajectory() {
-    for (size_t i = 0; i < poses.size(); i++)
+    for (auto& pose : poses)
     {
         // draw three axes of each pose
-        Eigen::Vector3d Ow = poses[i].translation();
-        Eigen::Vector3d Xw = poses[i] * (0.1 * Eigen::Vector3d(1, 0, 0));
-        Eigen::Vector3d Yw = poses[i] * (0.1 * Eigen::Vector3d(0, 1, 0));
-        Eigen::Vector3d Zw = poses[i] * (0.1 * Eigen::Vector3d(0, 0, 1));
+        Eigen::Vector3d Ow = pose.translation();
+        Eigen::Vector3d Xw = pose * (0.1 * Eigen::Vector3d(1, 0, 0));
+        Eigen::Vector3d Yw = pose * (0.1 * Eigen::Vector3d(0, 1, 0));
+        Eigen::Vector3d Zw = pose * (0.1 * Eigen::Vector3d(0, 0, 1));
         glBegin(GL_LINES);
         glColor3f(1.0, 0.0, 0.0);
         glVertex3d(Ow[0], Ow[1], Ow[2]);
@@ -111,22 +64,22 @@ Drawer::~Drawer() {
 }
 
 void Drawer::addMapPoints(const std::vector<MapPoint>& mapPoints) {
-    static size_t lastsize = 0;
-    std::unique_lock lock(mMutex);
+    static size_t lastSize = 0;
+    size_t newSize = mapPoints.size();
+    std::unique_lock lock(mDrawerMutex);
 
-    for (size_t i = lastsize; i < mapPoints.size(); ++i) {
+    mMapPoints.reserve(newSize);
+    for (size_t i = lastSize; i < newSize; ++i) {
         mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(0, 0));
         mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(1, 0));
         mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(2, 0));
     }
 
-    lastsize = mapPoints.size();
+    lastSize = mapPoints.size();
 }
 
 void Drawer::addCurrentPose(const Eigen::Isometry3d& quaternion) {
-    {
-        std::unique_lock lock(mMutex);
-    }
+    std::unique_lock lock(mDrawerMutex);
     poses.push_back(quaternion);
 }
 
@@ -144,17 +97,14 @@ void Drawer::run(Drawer* drawer) {
                                 .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
                                 .SetHandler(&handler);
 
-
     while(!pangolin::ShouldQuit() && !drawer->mIsFinish) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
 
         {
-            std::unique_lock lock(drawer->mMutex);
+            std::unique_lock lock(drawer->mDrawerMutex);
             drawer->drawMapPoints();
-            //drawer->drawCurrentPose();
             drawer->drawTrajectory();
-            //drawer->drawAllPoses();
         }
 
         pangolin::FinishFrame();

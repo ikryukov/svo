@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
 
-        Eigen::Isometry3d quaternion = mRot2Quat(rotation);
+        Eigen::Isometry3d quaternion = rotation2quaternion(rotation);
         quaternion.pretranslate(Eigen::Vector3d(pose.at<double>(0),pose.at<double>(1),pose.at<double>(2)));
 
         drawer.addMapPoints(mapPoints);

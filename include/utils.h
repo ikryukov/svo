@@ -79,7 +79,7 @@ void printSummary(std::pair<double, int> max,
                   double total,
                   size_t maxRAM);
 
-Eigen::Isometry3d mRot2Quat(const cv::Mat& m);
+Eigen::Isometry3d rotation2quaternion(const cv::Mat& m);
 
 
 #endif // UTILS_H_

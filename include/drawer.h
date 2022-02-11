@@ -24,16 +24,13 @@ public:
     ~Drawer();
 
 private:
-    __forceinline static void drawCubeAt(const cv::Point3f& center, float edgeLength);
     __forceinline void drawMapPoints();
     __forceinline void drawTrajectory();
-    __forceinline void drawCurrentPose();
-    __forceinline void drawAllPoses();
 
     static void run(Drawer*);
 
     std::atomic<bool> mIsFinish = false;
-    std::mutex mMutex;
+    std::mutex mDrawerMutex;
     std::thread mThread;
     std::vector<cv::Point3f> mFeatures;
     std::vector<float> mMapPoints;
