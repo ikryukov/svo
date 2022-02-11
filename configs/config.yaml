@@ -1,6 +1,6 @@
 %YAML:1.0
-path: ../../datasets/color/sequences/00/
-gt_path: ../../datasets/poses/00.txt
+path: "./datasets/kitti/data_odometry_color/dataset/sequences/00/"
+gt_path: "./datasets/kitti/data_odometry_poses/dataset/poses/00.txt"
 start_frame: 0
 end_frame: 4540
 show_gt: true
