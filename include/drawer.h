@@ -18,7 +18,7 @@ class MapPoint;
 class Drawer {
 public:
     explicit Drawer();
-    void addCurrentPose(const cv::Mat& pose, const cv::Mat& rotation);
+    void addCurrentPose(const cv::Mat& pose, const cv::Vec3f& r);
     void addMapPoints(const std::vector<MapPoint>& mapPoints);
     ~Drawer();
 
@@ -27,6 +27,7 @@ private:
     __forceinline void drawMapPoints();
     __forceinline void drawTrajectory();
     __forceinline void drawCurrentPose();
+    __forceinline void drawAllPoses();
 
     static void run(Drawer*);
 
@@ -37,4 +38,6 @@ private:
     cv::Mat pose;
     std::vector<float> mMapPoints;
     std::vector<double> mTrajectory;
+    std::vector<double> mDirection;
+    cv::Vec3f rotation_euler;
 };

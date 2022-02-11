@@ -192,8 +192,11 @@ int main(int argc, char** argv) {
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
 
+        //pose.at<double>(1)*= -1;
+
+
         drawer.addMapPoints(mapPoints);
-        drawer.addCurrentPose(pose, rotation);
+        drawer.addCurrentPose(pose, rotation_euler);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {
@@ -209,6 +212,9 @@ int main(int argc, char** argv) {
         // print some metrics
         std::printf("-- Memory usage: %lluMbs / %lluMbs\n", ramInUse, totalRAM);
         std::printf("-T Frame time: %.3lfs\n", frameTime);
+        std::printf("-P Current pose: x: %.3lf y: %.3lf z: %.3lf\n", pose.at<double>(0),
+                                                                            pose.at<double>(1),
+                                                                            pose.at<double>(2));
     }
     double total = Timer::get<Timer::seconds>(startTime).count();
 
