@@ -3,6 +3,8 @@
 
 #include <opencv2/calib3d.hpp>
 
+#include <Eigen/Core>
+
 #include "async_image_loader.h"
 #include "config_reader.h"
 #include "map_point.h"
@@ -192,11 +194,11 @@ int main(int argc, char** argv) {
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
 
-        //pose.at<double>(1)*= -1;
-
+        Eigen::Isometry3d quaternion = mRot2Quat(rotation);
+        quaternion.pretranslate(Eigen::Vector3d(pose.at<double>(0),pose.at<double>(1),pose.at<double>(2)));
 
         drawer.addMapPoints(mapPoints);
-        drawer.addCurrentPose(pose, rotation_euler);
+        drawer.addCurrentPose(quaternion);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {

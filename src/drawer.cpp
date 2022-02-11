@@ -67,38 +67,36 @@ void Drawer::drawMapPoints() {
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void Drawer::drawCurrentPose() {
-    if (!pose.empty()) {
-        glColor4f(1., 0., 0., 1.0);
-        cv::Point3d point_3_f { pose.at<double>(0), pose.at<double>(1), pose.at<double>(2) };
-        drawCubeAt(point_3_f, 1);
-        //drawRectange(point_3_f);
-    }
-}
-
-void Drawer::drawAllPoses() {
-    for (int i=0; i < mTrajectory.size(); i+=3) {
-        cv::Point3d point_3_f { mTrajectory[i], mTrajectory[i+1], mTrajectory[i+2] };
-        drawCubeAt(point_3_f, 0.2);
-//        glBegin(GL_LINES);
-//        glVertex3f(point_3_f.x, point_3_f.y, point_3_f.z);
-//        glVertex3f(point_3_f.x+mDirection[i], point_3_f.y+mDirection[i+1], point_3_f.z+mDirection[i+2]);
-//        glEnd();
-    }
-}
-
 void Drawer::drawTrajectory() {
-    glColor4f(1., 0., 0., 1.0);
-    glVertexPointer(3, GL_DOUBLE, 0, mTrajectory.data());
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glDrawArrays(GL_LINE_STRIP, 0, mTrajectory.size() / 3);
-    glDisableClientState(GL_VERTEX_ARRAY);
-
-//    glColor4f(0., 1., 0., 1.0);
-//    glVertexPointer(3, GL_DOUBLE, 0, mDirection.data());
-//    glEnableClientState(GL_VERTEX_ARRAY);
-//    glDrawArrays(GL_LINE_STRIP, 0, mDirection.size() / 3);
-//    glDisableClientState(GL_VERTEX_ARRAY);
+    for (size_t i = 0; i < poses.size(); i++)
+    {
+        // draw three axes of each pose
+        Eigen::Vector3d Ow = poses[i].translation();
+        Eigen::Vector3d Xw = poses[i] * (0.1 * Eigen::Vector3d(1, 0, 0));
+        Eigen::Vector3d Yw = poses[i] * (0.1 * Eigen::Vector3d(0, 1, 0));
+        Eigen::Vector3d Zw = poses[i] * (0.1 * Eigen::Vector3d(0, 0, 1));
+        glBegin(GL_LINES);
+        glColor3f(1.0, 0.0, 0.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Xw[0], Xw[1], Xw[2]);
+        glColor3f(0.0, 1.0, 0.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Yw[0], Yw[1], Yw[2]);
+        glColor3f(0.0, 0.0, 1.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Zw[0], Zw[1], Zw[2]);
+        glEnd();
+    }
+    // draw a connection
+    for (size_t i = 1; i < poses.size(); i++)
+    {
+        glColor3f(0.0, 0.0, 0.0);
+        glBegin(GL_LINES);
+        auto p1 = poses[i-1], p2 = poses[i];
+        glVertex3d(p1.translation()[0], p1.translation()[1], p1.translation()[2]);
+        glVertex3d(p2.translation()[0], p2.translation()[1], p2.translation()[2]);
+        glEnd();
+    }
 }
 
 /////////////////////////////////////////////////////// Drawer ///////////////////////////////////////////////////////
@@ -125,19 +123,11 @@ void Drawer::addMapPoints(const std::vector<MapPoint>& mapPoints) {
     lastsize = mapPoints.size();
 }
 
-void Drawer::addCurrentPose(const cv::Mat& p, const cv::Vec3f& r) {
+void Drawer::addCurrentPose(const Eigen::Isometry3d& quaternion) {
     {
         std::unique_lock lock(mMutex);
-        this->pose = p;
-        this->rotation_euler = r;
     }
-    mTrajectory.push_back(pose.at<double>(0));
-    mTrajectory.push_back(pose.at<double>(1));
-    mTrajectory.push_back(pose.at<double>(2));
-
-    mDirection.push_back(pose.at<double>(0) + rotation_euler[0]);
-    mDirection.push_back(pose.at<double>(1) + rotation_euler[1]);
-    mDirection.push_back(pose.at<double>(2) + rotation_euler[2]);
+    poses.push_back(quaternion);
 }
 
 void Drawer::run(Drawer* drawer) {
@@ -145,13 +135,13 @@ void Drawer::run(Drawer* drawer) {
     glEnable(GL_DEPTH_TEST);
 
     pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(640,480,420,420,320,240,0.2,500),
-        pangolin::ModelViewLookAt(-2,2,-2, 0,0,0, pangolin::AxisY)
+        pangolin::ProjectionMatrix(1024, 768, 500, 500, 512, 389, 0.1, 1000),
+        pangolin::ModelViewLookAt(0, -0.1, -1.8, 0, 0, 0, 0.0, -1.0, 0.0)
     );
 
     pangolin::Handler3D handler(s_cam);
     pangolin::View& d_cam = pangolin::CreateDisplay()
-                                .SetBounds(0.0, 1.0, 0.0, 1.0, -640.0f/480.0f)
+                                .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
                                 .SetHandler(&handler);
 
 
@@ -164,7 +154,7 @@ void Drawer::run(Drawer* drawer) {
             drawer->drawMapPoints();
             //drawer->drawCurrentPose();
             drawer->drawTrajectory();
-            drawer->drawAllPoses();
+            //drawer->drawAllPoses();
         }
 
         pangolin::FinishFrame();

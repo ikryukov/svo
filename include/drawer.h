@@ -10,6 +10,7 @@
 #include <atomic>
 
 #include <opencv2/core/mat.hpp>
+#include <Eigen/Geometry>
 
 
 class MapPoint;
@@ -18,7 +19,7 @@ class MapPoint;
 class Drawer {
 public:
     explicit Drawer();
-    void addCurrentPose(const cv::Mat& pose, const cv::Vec3f& r);
+    void addCurrentPose(const Eigen::Isometry3d& quaternion);
     void addMapPoints(const std::vector<MapPoint>& mapPoints);
     ~Drawer();
 
@@ -35,9 +36,6 @@ private:
     std::mutex mMutex;
     std::thread mThread;
     std::vector<cv::Point3f> mFeatures;
-    cv::Mat pose;
     std::vector<float> mMapPoints;
-    std::vector<double> mTrajectory;
-    std::vector<double> mDirection;
-    cv::Vec3f rotation_euler;
+    std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> poses;
 };

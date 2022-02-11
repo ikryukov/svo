@@ -8,6 +8,7 @@
 #include <opencv2/core/mat.hpp>
 
 #include <chrono>
+#include <Eigen/Geometry>
 
 
 class Timer {
@@ -77,6 +78,8 @@ void printSummary(std::pair<double, int> max,
                   double avg,
                   double total,
                   size_t maxRAM);
+
+Eigen::Isometry3d mRot2Quat(const cv::Mat& m);
 
 
 #endif // UTILS_H_
