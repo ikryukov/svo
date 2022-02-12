@@ -65,8 +65,8 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
                          std::vector<cv::Point2f>& pointsLeft_t0,
                          std::vector<cv::Point2f>& pointsLeft_t1,
                          cv::Mat& points3D_t0,
-                         cv::Mat& rotation,
-                         cv::Mat& translation);
+                         cv::Matx<double, 3, 3>& rotation,
+                         cv::Matx<double, 3, 1>& translation);
 
 
 void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
@@ -85,7 +85,7 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
 void integrateOdometryStereo(int frame_i,
                              cv::Mat& rigid_body_transformation,
                              cv::Mat& frame_pose,
-                             const cv::Mat& rotation,
-                             const cv::Mat& translation_stereo);
+                             const cv::Matx<double, 3, 3>& rotation,
+                             const cv::Matx<double, 3, 1>& translation_stereo);
 
 #endif // CORE_H_

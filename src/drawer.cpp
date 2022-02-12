@@ -77,9 +77,21 @@ void Drawer::addMapPoints(const std::vector<MapPoint>& mapPoints) {
     lastSize = mapPoints.size();
 }
 
-void Drawer::addCurrentPose(const Eigen::Isometry3d& quaternion) {
-    std::unique_lock lock(mDrawerMutex);
-    poses.push_back(quaternion);
+void Drawer::addCurrentPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& pose) {
+    Eigen::Matrix<double, 3, 3> rotationEigen;
+    cv::cv2eigen(rotation, rotationEigen);
+    Eigen::Vector3d translationEigen{ pose(0), pose(1), pose(2) };
+    {
+        std::unique_lock lock(mDrawerMutex);
+        if (poses.size() > 1) {
+            auto p = poses.back();
+            p.rotate(rotationEigen);
+            p.translate(translationEigen);
+            poses.push_back(p);
+        } else {
+            poses.emplace_back(Eigen::Quaternion<double>::Identity());
+        }
+    }
 }
 
 void Drawer::run(Drawer* drawer) {

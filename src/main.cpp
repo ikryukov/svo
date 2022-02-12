@@ -3,8 +3,6 @@
 
 #include <opencv2/calib3d.hpp>
 
-#include <Eigen/Core>
-
 #include "async_image_loader.h"
 #include "config_reader.h"
 #include "map_point.h"
@@ -78,8 +76,8 @@ int main(int argc, char** argv) {
     const cv::Mat projMatrl = (cv::Mat_<float>(3, 4) << fx, 0., cx, 0., 0., fy, cy, 0., 0, 0., 1., 0.);
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
 
-    cv::Mat rotation = cv::Mat::eye(3, 3, CV_64F);
-    cv::Mat translation_stereo = cv::Mat::zeros(3, 1, CV_64F);
+    auto rotation = cv::Matx<double, 3, 3>::eye();
+    auto translation_stereo = cv::Matx<double, 3, 1>::zeros();
 
     cv::Mat pose = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat Rpose = cv::Mat::eye(3, 3, CV_64F);
@@ -187,18 +185,11 @@ int main(int argc, char** argv) {
             std::cout << "Too large rotation" << std::endl;
         }
 
-//        Rpose = frame_pose(cv::Range(0, 3), cv::Range(0, 3));
-//        cv::Vec3f Rpose_euler = rotationMatrixToEulerAngles(Rpose);
-        pose = frame_pose.col(3).clone();
+        drawer.addMapPoints(mapPoints);
+        drawer.addCurrentPose(rotation, translation_stereo);
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
-
-        Eigen::Isometry3d quaternion = rotation2quaternion(rotation);
-        quaternion.pretranslate(Eigen::Vector3d(pose.at<double>(0),pose.at<double>(1),pose.at<double>(2)));
-
-        drawer.addMapPoints(mapPoints);
-        drawer.addCurrentPose(quaternion);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {
@@ -214,9 +205,6 @@ int main(int argc, char** argv) {
         // print some metrics
         std::printf("-- Memory usage: %lluMbs / %lluMbs\n", ramInUse, totalRAM);
         std::printf("-T Frame time: %.3lfs\n", frameTime);
-        std::printf("-P Current pose: x: %.3lf y: %.3lf z: %.3lf\n", pose.at<double>(0),
-                                                                            pose.at<double>(1),
-                                                                            pose.at<double>(2));
     }
     double total = Timer::get<Timer::seconds>(startTime).count();
 

@@ -8,7 +8,6 @@
 #include <opencv2/core/mat.hpp>
 
 #include <chrono>
-#include <Eigen/Geometry>
 
 
 class Timer {
@@ -49,7 +48,7 @@ bool isRotationMatrix(cv::Mat& R);
 // Calculates rotation matrix to euler angles
 // The result is the same as MATLAB except the order
 // of the euler angles ( x and z are swapped ).
-cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R);
+cv::Vec3f rotationMatrixToEulerAngles(cv::Matx<double, 3, 3>& R);
 
 
 void display(int frame_id,
@@ -78,8 +77,6 @@ void printSummary(std::pair<double, int> max,
                   double avg,
                   double total,
                   size_t maxRAM);
-
-Eigen::Isometry3d rotation2quaternion(const cv::Mat& m);
 
 
 #endif // UTILS_H_

@@ -15,10 +15,9 @@
 #endif
 
 #include "utils.h"
-#include "pangolin/gl/opengl_render_state.h"
 
 
-bool isRotationMatrix(cv::Mat& R) {
+bool isRotationMatrix(cv::Matx<double, 3, 3>& R) {
     cv::Mat Rt;
     cv::transpose(R, Rt);
     cv::Mat shouldBeIdentity = Rt * R;
@@ -27,24 +26,24 @@ bool isRotationMatrix(cv::Mat& R) {
     return cv::norm(I, shouldBeIdentity) < 1e-6;
 }
 
-cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R) {
+cv::Vec3f rotationMatrixToEulerAngles(cv::Matx<double, 3, 3>& R) {
     assert(isRotationMatrix(R));
 
-    float sy = sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
+    float sy = sqrt(R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0));
 
     bool singular = sy < 1e-6; // If
 
     float x, y, z;
     if (!singular)
     {
-        x = atan2(R.at<double>(2, 1), R.at<double>(2, 2));
-        y = atan2(-R.at<double>(2, 0), sy);
-        z = atan2(R.at<double>(1, 0), R.at<double>(0, 0));
+        x = atan2(R(2, 1), R(2, 2));
+        y = atan2(-R(2, 0), sy);
+        z = atan2(R(1, 0), R(0, 0));
     }
     else
     {
-        x = atan2(-R.at<double>(1, 2), R.at<double>(1, 1));
-        y = atan2(-R.at<double>(2, 0), sy);
+        x = atan2(-R(1, 2), R(1, 1));
+        y = atan2(-R(2, 0), sy);
         z = 0;
     }
     return cv::Vec3f(x, y, z);
@@ -124,79 +123,3 @@ void printSummary(std::pair<double, int> max, std::pair<double, int> min, double
         seconds
     );
 }
-
-inline double sign(double x) {
-    return (x >= 0.0f) ? +1.0f : -1.0f;
-}
-
-inline double norm(double a, double b, double c, double d) {
-    return sqrt(a * a + b * b + c * c + d * d);
-}
-
-// quaternion = [w, x, y, z]'
-Eigen::Isometry3d rotation2quaternion(const cv::Mat& m) {
-    double r11 = m.at<double>(0, 0);
-    double r12 = m.at<double>(0, 1);
-    double r13 = m.at<double>(0, 2);
-    double r21 = m.at<double>(1, 0);
-    double r22 = m.at<double>(1, 1);
-    double r23 = m.at<double>(1, 2);
-    double r31 = m.at<double>(2, 0);
-    double r32 = m.at<double>(2, 1);
-    double r33 = m.at<double>(2, 2);
-    double q0 = (r11 + r22 + r33 + 1.0f) / 4.0f;
-    double q1 = (r11 - r22 - r33 + 1.0f) / 4.0f;
-    double q2 = (-r11 + r22 - r33 + 1.0f) / 4.0f;
-    double q3 = (-r11 - r22 + r33 + 1.0f) / 4.0f;
-    if (q0 < 0.0f) {
-        q0 = 0.0f;
-    }
-    if (q1 < 0.0f) {
-        q1 = 0.0f;
-    }
-    if (q2 < 0.0f) {
-        q2 = 0.0f;
-    }
-    if (q3 < 0.0f) {
-        q3 = 0.0f;
-    }
-    q0 = sqrt(q0);
-    q1 = sqrt(q1);
-    q2 = sqrt(q2);
-    q3 = sqrt(q3);
-    if (q0 >= q1 && q0 >= q2 && q0 >= q3) {
-        q0 *= +1.0f;
-        q1 *= sign(r32 - r23);
-        q2 *= sign(r13 - r31);
-        q3 *= sign(r21 - r12);
-    }
-    else if (q1 >= q0 && q1 >= q2 && q1 >= q3) {
-        q0 *= sign(r32 - r23);
-        q1 *= +1.0f;
-        q2 *= sign(r21 + r12);
-        q3 *= sign(r13 + r31);
-    }
-    else if (q2 >= q0 && q2 >= q1 && q2 >= q3) {
-        q0 *= sign(r13 - r31);
-        q1 *= sign(r21 + r12);
-        q2 *= +1.0f;
-        q3 *= sign(r32 + r23);
-    }
-    else if (q3 >= q0 && q3 >= q1 && q3 >= q2) {
-        q0 *= sign(r21 - r12);
-        q1 *= sign(r31 + r13);
-        q2 *= sign(r32 + r23);
-        q3 *= +1.0f;
-    }
-    else {
-        printf("coding error\n");
-    }
-    double r = norm(q0, q1, q2, q3);
-    q0 /= r;
-    q1 /= r;
-    q2 /= r;
-    q3 /= r;
-
-    return Eigen::Isometry3d(Eigen::Quaternion(q0, q1, q2, q3));
-}
-

@@ -214,8 +214,8 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
                          std::vector<cv::Point2f>& pointsLeft_t0,
                          std::vector<cv::Point2f>& pointsLeft_t1,
                          cv::Mat& points3D_t0,
-                         cv::Mat& rotation,
-                         cv::Mat& translation)
+                         cv::Matx<double, 3, 3>& rotation,
+                         cv::Matx<double, 3, 1>& translation)
 {
     // Calculate frame to frame transformation
 
@@ -379,8 +379,8 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
 void integrateOdometryStereo(int frame_i,
                              cv::Mat& rigid_body_transformation,
                              cv::Mat& frame_pose,
-                             const cv::Mat& rotation,
-                             const cv::Mat& translation_stereo)
+                             const cv::Matx<double, 3, 3>& rotation,
+                             const cv::Matx<double, 3, 1>& translation_stereo)
 {
     // std::cout << "rotation" << rotation << std::endl;
     // std::cout << "translation_stereo" << translation_stereo << std::endl;
@@ -392,9 +392,9 @@ void integrateOdometryStereo(int frame_i,
 
     // std::cout << "rigid_body_transformation" << rigid_body_transformation << std::endl;
 
-    double scale = sqrt((translation_stereo.at<double>(0)) * (translation_stereo.at<double>(0)) +
-                        (translation_stereo.at<double>(1)) * (translation_stereo.at<double>(1)) +
-                        (translation_stereo.at<double>(2)) * (translation_stereo.at<double>(2)));
+    double scale = sqrt((translation_stereo(0)) * (translation_stereo(0)) +
+                        (translation_stereo(1)) * (translation_stereo(1)) +
+                        (translation_stereo(2)) * (translation_stereo(2)));
 
     // frame_pose = frame_pose * rigid_body_transformation;
 //    std::cout << "scale: " << scale << std::endl;

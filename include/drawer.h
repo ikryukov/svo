@@ -9,8 +9,10 @@
 #include <mutex>
 #include <atomic>
 
-#include <opencv2/core/mat.hpp>
 #include <Eigen/Geometry>
+
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/eigen.hpp>
 
 
 class MapPoint;
@@ -19,7 +21,7 @@ class MapPoint;
 class Drawer {
 public:
     explicit Drawer();
-    void addCurrentPose(const Eigen::Isometry3d& quaternion);
+    void addCurrentPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& pose);
     void addMapPoints(const std::vector<MapPoint>& mapPoints);
     ~Drawer();
 
