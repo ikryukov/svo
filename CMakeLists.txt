@@ -16,6 +16,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(readerwriterqueue)
 
+set(GLEW_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/external/GLEW/include)
+set(GLEW_LIBRARY ${CMAKE_SOURCE_DIR}/external/GLEW/lib/glew32.lib)
+
 add_subdirectory(external/eigen)
 add_subdirectory(external/pangolin)
 
