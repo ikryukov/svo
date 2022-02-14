@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
     const cv::Mat projMatrl = (cv::Mat_<float>(3, 4) << fx, 0., cx, 0., 0., fy, cy, 0., 0, 0., 1., 0.);
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
 
-    auto rotation = cv::Matx<double, 3, 3>::eye();
-    auto translation_stereo = cv::Matx<double, 3, 1>::zeros();
+    auto rotation = cv::Matx33d::eye();
+    auto translation_stereo = cv::Matx31d::zeros();
 
     cv::Mat pose = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat Rpose = cv::Mat::eye(3, 3, CV_64F);
