@@ -14,7 +14,6 @@
 x64/
 build/
 bld/
-[Bb]in/
 [Oo]bj/
 
 # CMake
@@ -197,10 +196,6 @@ UpgradeLog*.htm
 FakesAssemblies/
 
 .vs/
-
-# DLLs in bin
-!bin/*.dll
-
 *.args.json
 
 # Ignore VS project files
