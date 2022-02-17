@@ -16,19 +16,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(readerwriterqueue)
 
-set(GLEW_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/external/GLEW/include)
-set(GLEW_LIBRARY ${CMAKE_SOURCE_DIR}/external/GLEW/lib/glew32.lib)
-
-add_subdirectory(external/eigen)
-add_subdirectory(external/pangolin)
+find_package(Threads REQUIRED)
+find_package(Eigen3 3.1.0 REQUIRED)
+find_package(Pangolin REQUIRED)
 
 include_directories(./include)
 
-FILE(GLOB MyCSources ./src/*.cpp)
-
-set (SOURCES ${MyCSources})
-
-source_group ("Source Files" FILES ${SOURCES})
+file(GLOB MyCSources ./src/*.cpp)
+set(SOURCES ${MyCSources})
+source_group("Source Files" FILES ${SOURCES})
 
 add_executable( ${PROJECT}  ${HEADERS} ${SOURCES} )
 target_link_libraries( ${PROJECT} ${OpenCV_LIBS} Eigen3::Eigen readerwriterqueue pango_display)
