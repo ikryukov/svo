@@ -32,7 +32,6 @@ set_property(TARGET ${PROJECT} PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 set(OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIRECTORY}/Debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIRECTORY}/Release)
 
@@ -44,3 +43,22 @@ if (MSVC)
             "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
             )
 endif ()
+
+# Set working directory
+if (MSVC)
+    set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${OUTPUT_DIRECTORY}")
+elseif (APPLE)
+    set_property(TARGET ${PROJECT} PROPERTY XCODE_SCHEME_WORKING_DIRECTORY "${OUTPUT_DIRECTORY}")
+endif ()
+
+add_custom_command(TARGET ${PROJECT} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        "${CMAKE_SOURCE_DIR}/configs"
+        "${OUTPUT_DIRECTORY}/configs"
+        )
+
+add_custom_command(TARGET ${PROJECT} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        "${CMAKE_SOURCE_DIR}/datasets"
+        "${OUTPUT_DIRECTORY}/datasets"
+        )

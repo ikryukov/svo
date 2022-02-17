@@ -1,4 +1,4 @@
-Stereo Visual Odometry
+Visual Odometry
 
 ## Requirements
 OpenCV 4.0

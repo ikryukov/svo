@@ -14,7 +14,7 @@
 
 int main(int argc, char** argv) {
     // get values from configuration file
-    std::string path = "../../config.yaml";
+    std::string path = "./configs/config.yaml";
     ConfigReader reader(path);
     Config config = reader.getConfig();
 
