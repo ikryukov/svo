@@ -52,13 +52,27 @@ elseif (APPLE)
 endif ()
 
 add_custom_command(TARGET ${PROJECT} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        COMMAND if $<CONFIG:Debug> neq 0 (
+        "${CMAKE_COMMAND}" -E create_symlink
         "${CMAKE_SOURCE_DIR}/configs"
-        "${OUTPUT_DIRECTORY}/configs"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/configs"
         )
+        COMMAND if $<CONFIG:Release> neq 0 (
+        "${CMAKE_COMMAND}" -E create_symlink
+        "${CMAKE_SOURCE_DIR}/configs"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/configs"
+        )
+)
 
 add_custom_command(TARGET ${PROJECT} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        COMMAND if $<CONFIG:Debug> neq 0 (
+        "${CMAKE_COMMAND}" -E create_symlink
         "${CMAKE_SOURCE_DIR}/datasets"
-        "${OUTPUT_DIRECTORY}/datasets"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}/datasets"
         )
+        COMMAND if $<CONFIG:Release> neq 0 (
+        "${CMAKE_COMMAND}" -E create_symlink
+        "${CMAKE_SOURCE_DIR}/datasets"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}/datasets"
+        )
+)
