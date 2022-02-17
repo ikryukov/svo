@@ -30,3 +30,17 @@ add_executable( ${PROJECT}  ${HEADERS} ${SOURCES} )
 target_link_libraries( ${PROJECT} ${OpenCV_LIBS} Eigen3::Eigen readerwriterqueue pango_display)
 set_property(TARGET ${PROJECT} PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
+set(OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIRECTORY}/Debug)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIRECTORY}/Release)
+
+if (MSVC)
+    add_custom_command(TARGET ${PROJECT} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/external/GLEW/bin/glew32.dll"
+            "$<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}>"
+            "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
+            )
+endif ()
