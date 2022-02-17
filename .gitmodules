@@ -1,10 +1,6 @@
-[submodule "external/Sophus"]
-    ignore = dirty
-	path = external/Sophus
-	url = https://github.com/strasdat/Sophus
-[submodule "external/openvg"]
-	path = external/openvg
-	url = https://github.com/laurentkneip/opengv
 [submodule "external/eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen
+[submodule "external/pangolin"]
+	path = external/pangolin
+	url = https://github.com/stevenlovegrove/Pangolin

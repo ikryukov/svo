@@ -9,6 +9,7 @@
 #include "bucket.h"
 #include "utils.h"
 #include "core.h"
+#include "drawer.h"
 
 
 int main(int argc, char** argv) {
@@ -75,8 +76,8 @@ int main(int argc, char** argv) {
     const cv::Mat projMatrl = (cv::Mat_<float>(3, 4) << fx, 0., cx, 0., 0., fy, cy, 0., 0, 0., 1., 0.);
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
 
-    cv::Mat rotation = cv::Mat::eye(3, 3, CV_64F);
-    cv::Mat translation_stereo = cv::Mat::zeros(3, 1, CV_64F);
+    auto rotation = cv::Matx33d::eye();
+    auto translation_stereo = cv::Matx31d::zeros();
 
     cv::Mat pose = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat Rpose = cv::Mat::eye(3, 3, CV_64F);
@@ -98,6 +99,7 @@ int main(int argc, char** argv) {
     cv::Mat points4D, points3D;
     FeatureSet currentVOFeatures;
     std::vector<MapPoint> mapPoints;
+    Drawer drawer;
 
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
@@ -183,14 +185,11 @@ int main(int argc, char** argv) {
             std::cout << "Too large rotation" << std::endl;
         }
 
-//        Rpose = frame_pose(cv::Range(0, 3), cv::Range(0, 3));
-//        cv::Vec3f Rpose_euler = rotationMatrixToEulerAngles(Rpose);
-        pose = frame_pose.col(3).clone();
+        drawer.addMapPoints(mapPoints);
+        drawer.addCurrentPose(rotation, translation_stereo);
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
-
-        display(numFrame, trajectory, pose, gt_translations[numFrame-1], 0.0, config.show_gt);
 
         size_t ramInUse = getCurrentlyUsedRAM();
         if (frameTime > maxFrameTime.first) {

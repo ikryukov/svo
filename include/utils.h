@@ -48,7 +48,7 @@ bool isRotationMatrix(cv::Mat& R);
 // Calculates rotation matrix to euler angles
 // The result is the same as MATLAB except the order
 // of the euler angles ( x and z are swapped ).
-cv::Vec3f rotationMatrixToEulerAngles(cv::Mat& R);
+cv::Vec3f rotationMatrixToEulerAngles(cv::Matx<double, 3, 3>& R);
 
 
 void display(int frame_id,

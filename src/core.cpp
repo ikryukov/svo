@@ -90,7 +90,7 @@ void circularMatching(cv::Mat& img_l_0,
     deleteUnmatchFeaturesCircle(points_l_0, points_r_0, points_r_1, points_l_1, points_l_0_return, status0, status1,
                                 status2, status3, current_features.ages);
 
-    std::cout << "-T circularMatching() time: " << Timer::get(t) << std::endl;
+    std::cout << "-T circularMatching() time: " << Timer::get(t).count() << "ms" << std::endl;
 }
 
 
@@ -179,7 +179,7 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
         std::vector<cv::Point2f> new_features;
         auto t = Timer::set();
         detector->detect(imageLeft_t0, keypoints);
-        std::cout << "-T Detection time: " << Timer::get(t) << std::endl;
+        std::cout << "-T Detection time: " << Timer::get(t).count() << "ms" << std::endl;
         cv::KeyPoint::convert(keypoints, new_features, std::vector<int>());
 
         // append new features with old features
@@ -214,8 +214,8 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
                          std::vector<cv::Point2f>& pointsLeft_t0,
                          std::vector<cv::Point2f>& pointsLeft_t1,
                          cv::Mat& points3D_t0,
-                         cv::Mat& rotation,
-                         cv::Mat& translation)
+                         cv::Matx33d& rotation,
+                         cv::Matx31d& translation)
 {
     // Calculate frame to frame transformation
 
@@ -379,8 +379,8 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
 void integrateOdometryStereo(int frame_i,
                              cv::Mat& rigid_body_transformation,
                              cv::Mat& frame_pose,
-                             const cv::Mat& rotation,
-                             const cv::Mat& translation_stereo)
+                             const cv::Matx33d& rotation,
+                             const cv::Matx31d& translation_stereo)
 {
     // std::cout << "rotation" << rotation << std::endl;
     // std::cout << "translation_stereo" << translation_stereo << std::endl;
@@ -392,9 +392,9 @@ void integrateOdometryStereo(int frame_i,
 
     // std::cout << "rigid_body_transformation" << rigid_body_transformation << std::endl;
 
-    double scale = sqrt((translation_stereo.at<double>(0)) * (translation_stereo.at<double>(0)) +
-                        (translation_stereo.at<double>(1)) * (translation_stereo.at<double>(1)) +
-                        (translation_stereo.at<double>(2)) * (translation_stereo.at<double>(2)));
+    double scale = sqrt((translation_stereo(0)) * (translation_stereo(0)) +
+                        (translation_stereo(1)) * (translation_stereo(1)) +
+                        (translation_stereo(2)) * (translation_stereo(2)));
 
     // frame_pose = frame_pose * rigid_body_transformation;
 //    std::cout << "scale: " << scale << std::endl;
