@@ -9,18 +9,22 @@
 #include <pangolin/handler/handler.h>
 #include <pangolin/display/view.h>
 
-#include "map_point.h"
+#include "map.h"
 
 
-void Drawer::drawMapPoints() {
+__forceinline void drawMapPoints(const auto& points) {
+    glPointSize(2);
     glColor4f(0., 0., 1., 1.0);
-    glVertexPointer(3, GL_FLOAT, 0, mMapPoints.data());
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glDrawArrays(GL_POINTS, 0, mMapPoints.size() / 3);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    glBegin(GL_POINTS);
+
+    for (const MapPoint* mp : points) {
+        glVertex3f(mp->mWorldPos.x(), mp->mWorldPos.y(), mp->mWorldPos.z());
+    }
+
+    glEnd();
 }
 
-void Drawer::drawTrajectory() {
+__forceinline void drawTrajectory(const auto& poses) {
     glBegin(GL_LINES);
     for (auto& pose : poses)
     {
@@ -53,71 +57,46 @@ void Drawer::drawTrajectory() {
 
 /////////////////////////////////////////////////////// Drawer ///////////////////////////////////////////////////////
 
-Drawer::Drawer()
-    : mThread(run, this)
+Drawer::Drawer(Map& map)
+    : mMap(map)
+    , mThread([this]() {
+         pangolin::CreateWindowAndBind("VO", 640, 480);
+         glEnable(GL_DEPTH_TEST);
+
+         pangolin::OpenGlRenderState s_cam(
+             pangolin::ProjectionMatrix(1024, 768, 500, 500, 512, 389, 0.1, 1000),
+             pangolin::ModelViewLookAt(0, -0.1, -1.8, 0, 0, 0, 0.0, -1.0, 0.0)
+         );
+
+         pangolin::Handler3D handler(s_cam);
+         pangolin::View& d_cam = pangolin::CreateDisplay()
+                                     .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
+                                     .SetHandler(&handler);
+
+         while(!pangolin::ShouldQuit() && !mIsFinish) {
+             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+             d_cam.Activate(s_cam);
+
+             {
+                 std::shared_lock lock(mMap.mMapMutex);
+                 for (auto& kf : mMap.mKeyFrames) {
+                     drawMapPoints(kf->mMapPoints);
+                     drawTrajectory(kf->mPoses);
+                 }
+             }
+
+             {
+                 std::shared_lock lock(mMap.mCurrentKeyFrame->mKeyFrameMutex);
+                 // drawMapPoints(mMap.mCurrentKeyFrame->mMapPoints);
+                 drawTrajectory(mMap.mCurrentKeyFrame->mPoses);
+             }
+
+             pangolin::FinishFrame();
+         }
+    })
 {}
 
 Drawer::~Drawer() {
     mIsFinish = true;
     mThread.join();
-}
-
-void Drawer::addMapPoints(const std::vector<MapPoint>& mapPoints) {
-    static size_t lastSize = 0;
-    size_t newSize = mapPoints.size();
-    std::unique_lock lock(mDrawerMutex);
-
-    mMapPoints.reserve(newSize);
-    for (size_t i = lastSize; i < newSize; ++i) {
-        mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(0, 0));
-        mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(1, 0));
-        mMapPoints.push_back(mapPoints[i].mWorldPos.at<float>(2, 0));
-    }
-
-    lastSize = mapPoints.size();
-}
-
-void Drawer::addCurrentPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& pose) {
-    Eigen::Matrix<double, 3, 3> rotationEigen;
-    cv::cv2eigen(rotation, rotationEigen);
-    Eigen::Vector3d translationEigen{ pose(0), pose(1), pose(2) };
-    {
-        std::unique_lock lock(mDrawerMutex);
-        if (poses.size() > 1) {
-            auto p = poses.back();
-            p.rotate(rotationEigen);
-            p.translate(translationEigen);
-            poses.push_back(p);
-        } else {
-            poses.emplace_back(Eigen::Quaternion<double>::Identity());
-        }
-    }
-}
-
-void Drawer::run(Drawer* drawer) {
-    pangolin::CreateWindowAndBind("VO", 640, 480);
-    glEnable(GL_DEPTH_TEST);
-
-    pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(1024, 768, 500, 500, 512, 389, 0.1, 1000),
-        pangolin::ModelViewLookAt(0, -0.1, -1.8, 0, 0, 0, 0.0, -1.0, 0.0)
-    );
-
-    pangolin::Handler3D handler(s_cam);
-    pangolin::View& d_cam = pangolin::CreateDisplay()
-                                .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
-                                .SetHandler(&handler);
-
-    while(!pangolin::ShouldQuit() && !drawer->mIsFinish) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        d_cam.Activate(s_cam);
-
-        {
-            std::unique_lock lock(drawer->mDrawerMutex);
-            drawer->drawMapPoints();
-            drawer->drawTrajectory();
-        }
-
-        pangolin::FinishFrame();
-    }
 }

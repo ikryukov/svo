@@ -12,6 +12,7 @@ struct FeatureSet;
 class MapPoint;
 struct Config;
 struct FeaturePoint;
+class Map;
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -52,11 +53,11 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
                       cv::Mat& imageLeft_t1,
                       cv::Mat& imageRight_t1,
                       FeatureSet& currentVOFeatures,
-                      std::vector<MapPoint>& MapPoints,
                       std::vector<cv::Point2f>& pointsLeft_t0,
                       std::vector<cv::Point2f>& pointsRight_t0,
                       std::vector<cv::Point2f>& pointsLeft_t1,
                       std::vector<cv::Point2f>& pointsRight_t1,
+                      Map& map,
                       const Config& config);
 
 
@@ -71,8 +72,8 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
 
 void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
                           std::vector<bool>& valid,
-                          std::vector<MapPoint>& mapPoints,
-                          int frameId_t0,
+                          Map& map,
+                          size_t frameId_t0,
                           cv::Mat& points3DFrame_t0,
                           cv::Mat& points3DFrame_t1,
                           cv::Mat& points3DWorld,

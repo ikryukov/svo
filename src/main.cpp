@@ -9,7 +9,7 @@
 #include "bucket.h"
 #include "utils.h"
 #include "core.h"
-#include "drawer.h"
+#include "map.h"
 
 
 int main(int argc, char** argv) {
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
     cv::Mat points4D, points3D;
     FeatureSet currentVOFeatures;
     std::vector<MapPoint> mapPoints;
-    Drawer drawer;
+    Map map;
 
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
 
         std::vector<cv::Point2f> pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1;
 
-        matchingFeatures(imageLeft_t0, imageRight_t0, imageLeft_t1, imageRight_t1, currentVOFeatures, mapPoints,
-                         pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1, config);
+        matchingFeatures(imageLeft_t0, imageRight_t0, imageLeft_t1, imageRight_t1, currentVOFeatures,
+                         pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1, map, config);
 
         imageLeft_t0 = imageLeft_t1;
         imageRight_t0 = imageRight_t1;
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
 
         std::vector<cv::Point2f> newPoints;
         std::vector<bool> valid;
-        distinguishNewPoints(newPoints, valid, mapPoints, numFrame - 1, points3D_t0, points3D_t1, points3D,
+        distinguishNewPoints(newPoints, valid, map, numFrame - 1, points3D_t0, points3D_t1, points3D,
                              currentPointsLeft_t0, currentPointsLeft_t1, currentFeaturePointsLeft, oldFeaturePointsLeft);
         oldFeaturePointsLeft = currentFeaturePointsLeft;
         std::printf("-- Map points size: %llu\n", mapPoints.size());
@@ -184,9 +184,7 @@ int main(int argc, char** argv) {
         {
             std::cout << "Too large rotation" << std::endl;
         }
-
-        drawer.addMapPoints(mapPoints);
-        drawer.addCurrentPose(rotation, translation_stereo);
+        map.addPose(rotation, translation_stereo);
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
