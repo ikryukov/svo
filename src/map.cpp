@@ -28,13 +28,13 @@ void Map::addPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double,
     Eigen::Vector3d translationEigen { translation(0), translation(1), translation(2) };
 
     auto lastPose = Eigen::Isometry3d::Identity();
-    if (std::shared_lock lock1(mCurrentKeyFrame->mKeyFrameMutex); !mCurrentKeyFrame->mPoses.empty()) {
+    if (std::shared_lock lock1(mCurrentKFMutex); !mCurrentKeyFrame->mPoses.empty()) {
         lastPose = mCurrentKeyFrame->mPoses.back();
     } else if (std::shared_lock lock2(mMapMutex); !mKeyFrames.empty()) {
         lastPose = mKeyFrames.back()->mPoses.back();
     }
 
-    std::unique_lock lock(mCurrentKeyFrame->mKeyFrameMutex);
+    std::unique_lock lock(mCurrentKFMutex);
     mCurrentKeyFrame->mPoses.push_back(lastPose.rotate(rotationEigen).translate(translationEigen));
 }
 
@@ -50,12 +50,13 @@ void Map::endKeyFrame() {
 }
 
 MapPoint* Map::getPoint(size_t id) {
+    std::shared_lock currentLock(mCurrentKFMutex);
     auto it = std::find_if(mCurrentKeyFrame->mMapPoints.begin(), mCurrentKeyFrame->mMapPoints.end(), [id](auto& mp) {
       return mp->ID == id;
     });
 
     if (it == mCurrentKeyFrame->mMapPoints.end()) {
-        std::shared_lock lock(mMapMutex);
+        std::shared_lock allLock(mMapMutex);
         for (auto* kf : mKeyFrames) {
             it = std::find_if(kf->mMapPoints.begin(), kf->mMapPoints.end(), [id](auto* mp) {
               return mp->ID == id;
@@ -68,12 +69,18 @@ MapPoint* Map::getPoint(size_t id) {
 }
 
 MapPoint* Map::createMapPoint() {
-    mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++));
+    {
+        std::unique_lock lock(mCurrentKFMutex);
+        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++));
+    }
     return mCurrentKeyFrame->mMapPoints.back();
 }
 
 MapPoint* Map::createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations) {
-    mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++, position, observations));
+    {
+        std::unique_lock lock(mCurrentKFMutex);
+        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++, position, observations));
+    }
     return mCurrentKeyFrame->mMapPoints.back();
 }
 

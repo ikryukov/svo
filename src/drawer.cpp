@@ -86,8 +86,8 @@ Drawer::Drawer(Map& map)
              }
 
              {
-                 std::shared_lock lock(mMap.mCurrentKeyFrame->mKeyFrameMutex);
-                 // drawMapPoints(mMap.mCurrentKeyFrame->mMapPoints);
+                 std::shared_lock lock(mMap.mCurrentKFMutex);
+                 drawMapPoints(mMap.mCurrentKeyFrame->mMapPoints);
                  drawTrajectory(mMap.mCurrentKeyFrame->mPoses);
              }
 

@@ -9,11 +9,23 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <opencv2/core/types.hpp>
 
-#include "key_frame.h"
 #include "drawer.h"
+#include "map_point.h"
+
+
+struct KeyFrame {
+    ~KeyFrame() {
+        for (auto* mp : mMapPoints)
+            delete mp;
+    }
+
+    std::vector<MapPoint*> mMapPoints;
+    std::vector<Eigen::Isometry3d> mPoses;
+};
 
 
 class Map {
@@ -42,6 +54,7 @@ private:
     std::vector<KeyFrame*> mKeyFrames;
     KeyFrame* mCurrentKeyFrame;
 
+    std::shared_mutex mCurrentKFMutex;
     std::shared_mutex mMapMutex;
     std::thread mThread;
     std::atomic<bool> mIsFinish = false;
