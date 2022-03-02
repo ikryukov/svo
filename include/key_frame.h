@@ -12,8 +12,7 @@
 #include "map_point.h"
 
 
-class KeyFrame {
-public:
+struct KeyFrame {
     KeyFrame() = default;
     KeyFrame(const KeyFrame& other);
     KeyFrame(KeyFrame&& other) noexcept;
