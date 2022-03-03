@@ -10,12 +10,12 @@ struct FeaturePoint {
     FeaturePoint(size_t id, int age, const cv::Point2f point)
         : ID(id)
         , mAge(age)
-        , mPoint(point)
+        , mPosOnFrame(point)
     {}
 
     size_t ID;
     int mAge;
-    cv::Point2f mPoint;
+    cv::Point2f mPosOnFrame;
 };
 
 struct FeatureSet {

@@ -282,8 +282,8 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
         bool exist = false;
         for (auto& oldPoint : oldFeaturePointsLeft)
         {
-            if ((oldPoint.mPoint.x == currentPointsLeft_t0[i].x) &&
-                (oldPoint.mPoint.y == currentPointsLeft_t0[i].y))
+            if ((oldPoint.mPosOnFrame.x == currentPointsLeft_t0[i].x) &&
+                (oldPoint.mPosOnFrame.y == currentPointsLeft_t0[i].y))
             {
                 exist = true;
 
