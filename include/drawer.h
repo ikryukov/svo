@@ -13,11 +13,11 @@ class Map;
 
 class Drawer {
 public:
-    explicit Drawer(Map& map);
+    explicit Drawer(const Map& map);
     ~Drawer();
 
 private:
     std::atomic<bool> mIsFinish = false;
-    Map& mMap;
+    const Map& mMap;
     std::thread mThread;
 };

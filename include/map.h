@@ -46,6 +46,8 @@ public:
     MapPoint* createMapPoint();
     MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
 
+    [[nodiscard]] size_t mapPointsSize() const;
+
 private:
 
     static void run(Map* map);
@@ -54,8 +56,8 @@ private:
     std::vector<KeyFrame*> mKeyFrames;
     KeyFrame* mCurrentKeyFrame;
 
-    std::shared_mutex mCurrentKFMutex;
-    std::shared_mutex mMapMutex;
+    mutable std::shared_mutex mCurrentKFMutex;
+    mutable std::shared_mutex mMapMutex;
     std::thread mThread;
     std::atomic<bool> mIsFinish = false;
 

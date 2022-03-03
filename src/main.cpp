@@ -98,7 +98,6 @@ int main(int argc, char** argv) {
 
     cv::Mat points4D, points3D;
     FeatureSet currentVOFeatures;
-    std::vector<MapPoint> mapPoints;
     Map map;
 
     std::vector<FeaturePoint> oldFeaturePointsLeft;
@@ -165,7 +164,7 @@ int main(int argc, char** argv) {
         distinguishNewPoints(newPoints, valid, map, numFrame - 1, points3D_t0, points3D_t1, points3D,
                              currentPointsLeft_t0, currentPointsLeft_t1, currentFeaturePointsLeft, oldFeaturePointsLeft);
         oldFeaturePointsLeft = currentFeaturePointsLeft;
-        std::printf("-- Map points size: %llu\n", mapPoints.size());
+        std::printf("-- Map points size: %llu\n", map.mapPointsSize());
 
         // ------------------------------------------------
         // Append feature points to Point clouds

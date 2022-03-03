@@ -84,6 +84,20 @@ MapPoint* Map::createMapPoint(const Eigen::Vector3f& position, const std::vector
     return mCurrentKeyFrame->mMapPoints.back();
 }
 
+size_t Map::mapPointsSize() const {
+    size_t res = 0;
+    {
+        std::shared_lock lock(mMapMutex);
+        for (auto& kf : mKeyFrames) {
+            res += kf->mMapPoints.size();
+        }
+    }
+
+    std::shared_lock lock1(mCurrentKFMutex);
+    res += mCurrentKeyFrame->mMapPoints.size();
+    return res;
+}
+
 void Map::run(Map* map) {
     while (!map->mIsFinish) {
         // TODO optimization part here

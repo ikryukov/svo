@@ -57,7 +57,7 @@ __forceinline void drawTrajectory(const auto& poses) {
 
 /////////////////////////////////////////////////////// Drawer ///////////////////////////////////////////////////////
 
-Drawer::Drawer(Map& map)
+Drawer::Drawer(const Map& map)
     : mMap(map)
     , mThread([this]() {
          pangolin::CreateWindowAndBind("VO", 640, 480);
