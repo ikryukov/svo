@@ -1,41 +1,54 @@
-#ifndef MAPPOINT_H
-#define MAPPOINT_H
 
-#include <opencv2/core/mat.hpp>
+#pragma once
 
-#include <utility>
+#include <Eigen/Core>
+
 #include <vector>
 
 
-struct Observation
-{
-    int frame_id;
-    cv::Mat pointPoseInFrame;
+struct Observation {
+    size_t mFrameId;
+    Eigen::Vector3f mPointPoseInFrame;
 };
 
 
-class MapPoint
-{
+class MapPoint {
+
+    friend class Map;
+
 public:
-    // MapPoint();
-    MapPoint(int id, cv::Mat worldPos)
-        : mId(id)
-        , mWorldPos(std::move(worldPos))
-    {}
 
-    ~MapPoint() = default;
+    const size_t ID;
 
-    void addObservation(const Observation& observation) {
+    MapPoint* addObservation(const Observation& observation) {
         mObservations.push_back(observation);
+        return this;
     }
 
-    cv::Mat mWorldPos;
-private:
-    int mId;
+    MapPoint* setPosition(const Eigen::Vector3f& pos) {
+        mWorldPos = pos;
+        return this;
+    }
 
-    // Position in absolute coordinates
-    // std::map<Frame*, size_t> mObservations;
+private:
+
+    explicit MapPoint(size_t id)
+        : ID(id)
+    {}
+
+    MapPoint(size_t id, const Eigen::Vector3f& worldPos)
+        : ID(id)
+        , mWorldPos(worldPos)
+    {}
+
+    MapPoint(size_t id, const Eigen::Vector3f& worldPos, const std::vector<Observation>& obss)
+        : ID(id)
+        , mWorldPos(worldPos)
+        , mObservations(obss)
+    {}
+
+public:
+
+    Eigen::Vector3f mWorldPos;
     std::vector<Observation> mObservations;
 };
-
-#endif

@@ -6,15 +6,19 @@
 #include <vector>
 
 
-struct FeaturePoint
-{
-    cv::Point2f point;
-    int id;
-    int age;
+struct FeaturePoint {
+    FeaturePoint(size_t id, int age, const cv::Point2f point)
+        : ID(id)
+        , mAge(age)
+        , mPosOnFrame(point)
+    {}
+
+    size_t ID;
+    int mAge;
+    cv::Point2f mPosOnFrame;
 };
 
-struct FeatureSet
-{
+struct FeatureSet {
     [[nodiscard]] int size() const;
     void clear();
 

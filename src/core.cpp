@@ -9,9 +9,9 @@
 
 #include "core.h"
 #include "utils.h"
-#include "map_point.h"
 #include "bucket.h"
 #include "config_reader.h"
+#include "map.h"
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -136,11 +136,11 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
                       cv::Mat& imageLeft_t1,
                       cv::Mat& imageRight_t1,
                       FeatureSet& currentVOFeatures,
-                      std::vector<MapPoint>& MapPoints,
                       std::vector<cv::Point2f>& pointsLeft_t0,
                       std::vector<cv::Point2f>& pointsRight_t0,
                       std::vector<cv::Point2f>& pointsLeft_t1,
                       std::vector<cv::Point2f>& pointsRight_t1,
+                      Map& map,
                       const Config& config)
 {
     // Choose detector
@@ -172,7 +172,8 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
         }
     }
 
-    if (currentVOFeatures.size() < 2000)
+    // todo set this value in more proper way
+    if (currentVOFeatures.size() < 60)
     {
         // detect new features
         std::vector<cv::KeyPoint> keypoints;
@@ -185,6 +186,9 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
         // append new features with old features
         currentVOFeatures.appendNewFeatures(new_features);
         std::cout << "-- Current feature set size: " << currentVOFeatures.points.size() << std::endl;
+
+        // end current key frame, start new
+        map.endKeyFrame();
     }
 
     const int bucket_size = 64;
@@ -259,8 +263,8 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
 
 void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
                           std::vector<bool>& valid,
-                          std::vector<MapPoint>& mapPoints,
-                          int frameId_t0,
+                          Map& map,
+                          size_t frameId_t0,
                           cv::Mat& points3DFrame_t0,
                           cv::Mat& points3DFrame_t1,
                           cv::Mat& points3DWorld,
@@ -276,103 +280,56 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
     for (int i = 0; i < currentPointsLeft_t0.size(); ++i)
     {
         bool exist = false;
-        for (std::vector<FeaturePoint>::iterator oldPointIter = oldFeaturePointsLeft.begin();
-             oldPointIter != oldFeaturePointsLeft.end(); ++oldPointIter)
+        for (auto& oldPoint : oldFeaturePointsLeft)
         {
-            if ((oldPointIter->point.x == currentPointsLeft_t0[i].x) &&
-                (oldPointIter->point.y == currentPointsLeft_t0[i].y))
+            if ((oldPoint.mPosOnFrame.x == currentPointsLeft_t0[i].x) &&
+                (oldPoint.mPosOnFrame.y == currentPointsLeft_t0[i].y))
             {
                 exist = true;
 
-                FeaturePoint featurePoint{ .point = currentPointsLeft_t1[i],
-                                           .id = oldPointIter->id,
-                                           .age = oldPointIter->age + 1 };
-                currentFeaturePointsLeft.push_back(featurePoint);
+                currentFeaturePointsLeft.emplace_back(oldPoint.ID, oldPoint.mAge + 1, currentPointsLeft_t1[i]);
 
-                cv::Mat pointPoseIn_t1 = (cv::Mat_<float>(3, 1) << points3DFrame_t1.at<float>(i, 0),
-                                          points3DFrame_t1.at<float>(i, 1), points3DFrame_t1.at<float>(i, 2));
-                Observation obs;
-                obs.frame_id = frameId_t0 + 1;
-                obs.pointPoseInFrame = pointPoseIn_t1;
+                Eigen::Vector3f pointPoseIn_t1 = { points3DFrame_t1.at<float>(i, 0),
+                                                   points3DFrame_t1.at<float>(i, 1),
+                                                   points3DFrame_t1.at<float>(i, 2) };
 
-                mapPoints[oldPointIter->id].addObservation(obs);
-                // std::cout << "!!!!!!!!!!!!!!MapPoint  " << oldPointIter->id << " obs : " <<
-                // mapPoints[oldPointIter->id].mObservations.size() << std::endl;
-
+                map.getPoint(oldPoint.ID)
+                    ->addObservation({ frameId_t0, pointPoseIn_t1 });
                 break;
             }
         }
         if (!exist)
         {
+            // add new points to map points
+            Eigen::Vector3f worldPose = { points3DWorld.at<float>(i, 0),
+                                          points3DWorld.at<float>(i, 1),
+                                          points3DWorld.at<float>(i, 2) };
+
+            // observation from frame t0
+            Observation obs1 {
+                .mFrameId = frameId_t0,
+                .mPointPoseInFrame = { points3DFrame_t0.at<float>(i, 0),
+                                       points3DFrame_t0.at<float>(i, 1),
+                                       points3DFrame_t0.at<float>(i, 2) }
+            };
+
+            // observation from frame t1
+            Observation obs2 {
+                .mFrameId = frameId_t0 + 1,
+                .mPointPoseInFrame = { points3DFrame_t1.at<float>(i, 0),
+                                       points3DFrame_t1.at<float>(i, 1),
+                                       points3DFrame_t1.at<float>(i, 2) }
+            };
+
+            MapPoint* mp = map.createMapPoint(worldPose, { obs1, obs2 });
+
             newPoints.push_back(currentPointsLeft_t1[i]);
 
             // add new points to currentFeaturePointsLeft
-            int pointId = mapPoints.size();
-            FeaturePoint featurePoint{ .point = currentPointsLeft_t1[i], .id = pointId, .age = 1 };
-            currentFeaturePointsLeft.push_back(featurePoint);
-            // idx ++;
-
-            // add new points to map points
-            cv::Mat worldPose = (cv::Mat_<float>(3, 1) << points3DWorld.at<float>(i, 0), points3DWorld.at<float>(i, 1),
-                                 points3DWorld.at<float>(i, 2));
-
-            MapPoint mapPoint(pointId, worldPose);
-
-            // add observation from frame t0
-            cv::Mat pointPoseIn_t0 = (cv::Mat_<float>(3, 1) << points3DFrame_t0.at<float>(i, 0),
-                                      points3DFrame_t0.at<float>(i, 1), points3DFrame_t0.at<float>(i, 2));
-            Observation obs;
-            obs.frame_id = frameId_t0;
-            obs.pointPoseInFrame = pointPoseIn_t0;
-            mapPoint.addObservation(obs);
-
-            // add observation from frame t1
-            cv::Mat pointPoseIn_t1 = (cv::Mat_<float>(3, 1) << points3DFrame_t1.at<float>(i, 0),
-                                      points3DFrame_t1.at<float>(i, 1), points3DFrame_t1.at<float>(i, 2));
-            obs.frame_id = frameId_t0 + 1;
-            obs.pointPoseInFrame = pointPoseIn_t1;
-            mapPoint.addObservation(obs);
-
-            mapPoints.push_back(mapPoint);
+            currentFeaturePointsLeft.emplace_back(mp->ID, 1, currentPointsLeft_t1[i]);
         }
         valid.push_back(!exist);
     }
-
-    // std::cout << "---------------------------------- "  << std::endl;
-    // std::cout << "currentPointsLeft size : " << currentPointsLeft.size() << std::endl;
-    // std::cout << "points3DFrame_t0 size : " << points3DFrame_t0.size() << std::endl;
-    // std::cout << "points3DFrame_t1 size : " << points3DFrame_t1.size() << std::endl;
-    // std::cout << "points3DWorld size : " << points3DWorld.size() << std::endl;
-
-    // for (std::vector<cv::Point2f>::iterator currentPointIter = currentPointsLeft.begin() ; currentPointIter !=
-    // currentPointsLeft.end(); ++currentPointIter)
-    // {
-    //     bool exist = false;
-    //     for (std::vector<FeaturePoint>::iterator oldPointIter = oldFeaturePointsLeft.begin() ; oldPointIter !=
-    //     oldFeaturePointsLeft.end(); ++oldPointIter)
-    //     {
-    //         if ((oldPointIter->point.x == currentPointIter->x) && (oldPointIter->point.y == currentPointIter->y))
-    //         {
-    //            exist = true;
-
-    //            FeaturePoint featurePoint{.point=*currentPointIter, .id=oldPointIter->id};
-    //            currentFeaturePointsLeft.push_back(featurePoint);
-    //            break;
-    //         }
-    //     }
-    //     if (!exist)
-    //     {
-    //         newPoints.push_back(*currentPointIter);
-
-    //         FeaturePoint featurePoint{.point=*currentPointIter, .id=idx};
-    //         currentFeaturePointsLeft.push_back(featurePoint);
-    //         idx ++;
-
-    //     }
-    //     valid.push_back(!exist);
-
-    // }
-//    std::cout << "newPoints size : " << newPoints.size() << std::endl;
 }
 
 

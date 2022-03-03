@@ -39,7 +39,7 @@ void FeatureSet::bucketingFeatures(cv::Mat& image, int bucket_size, int features
     {
         for (int buckets_idx_width = 0; buckets_idx_width <= buckets_nums_width; buckets_idx_width++)
         {
-            Buckets.push_back(Bucket(features_per_bucket));
+            Buckets.emplace_back(features_per_bucket);
         }
     }
 
@@ -71,9 +71,9 @@ void FeatureSet::bucketingFeatures(cv::Mat& image, int bucket_size, int features
 
 void Bucket::add_feature(cv::Point2f point, int age) {
     // won't add feature with age > 10;
-    int age_threshold = 10;
-    if (age < age_threshold)
-    {
+//    int age_threshold = 10;
+//    if (age < age_threshold)
+//    {
         // insert any feature before bucket is full
         if (size() < max_size)
         {
@@ -97,7 +97,7 @@ void Bucket::add_feature(cv::Point2f point, int age) {
             features.points[age_min_idx] = point;
             features.ages[age_min_idx] = age;
         }
-    }
+//    }
 }
 
 void Bucket::get_features(FeatureSet& current_features) {
