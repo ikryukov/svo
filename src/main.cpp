@@ -181,9 +181,20 @@ int main(int argc, char** argv) {
         }
         else
         {
+            rotation=cv::Matx33d::eye();
             std::cout << "Too large rotation" << std::endl;
         }
         map.addPose(rotation, translation_stereo);
+        //logging current pose
+        std::cout << "x: "<< translation_stereo.val[0]
+                  << std::endl << "y: " << translation_stereo.val[1]
+                  << std::endl << "z: " << translation_stereo.val[2] << std::endl;
+        for (double & k : translation_stereo.val){
+            if (abs(k)>1.5) {
+                k=0;
+                std::cout << "JUMP DETECTED\n";
+            }
+        }
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;

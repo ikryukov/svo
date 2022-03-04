@@ -12,7 +12,7 @@
 #include "map.h"
 
 
-__forceinline void drawMapPoints(const auto& points) {
+__forceinline void drawMapPoints(const std::vector<MapPoint*>& points) {
     glPointSize(2);
     glColor4f(0., 0., 1., 1.0);
     glBegin(GL_POINTS);
@@ -24,7 +24,7 @@ __forceinline void drawMapPoints(const auto& points) {
     glEnd();
 }
 
-__forceinline void drawTrajectory(const auto& poses) {
+__forceinline void drawTrajectory(const std::vector<Eigen::Isometry3d>& poses) {
     glBegin(GL_LINES);
     for (auto& pose : poses)
     {
@@ -47,8 +47,7 @@ __forceinline void drawTrajectory(const auto& poses) {
     for (size_t i = 1; i < poses.size(); i++)
     {
         glColor3f(1.0, 1.0, 1.0);
-        auto t1 = poses[i-1].translation(),
-             t2 = poses[i].translation();
+        auto t1 = poses[i-1].translation(), t2 = poses[i].translation();
         glVertex3d(t1[0], t1[1], t1[2]);
         glVertex3d(t2[0], t2[1], t2[2]);
     }

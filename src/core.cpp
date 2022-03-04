@@ -194,7 +194,6 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
     const int bucket_size = 64;
     const int features_per_bucket = 4;
     currentVOFeatures.bucketingFeatures(imageLeft_t0, bucket_size, features_per_bucket);
-
     pointsLeft_t0 = currentVOFeatures.points;
 
     std::vector<cv::Point2f> pointsLeftReturn_t0; // feature points to check cicular mathcing validation
@@ -233,9 +232,16 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
     cv::Mat E, mask;
     cv::Mat translation_mono = cv::Mat::zeros(3, 1, CV_64F);
     E = cv::findEssentialMat(pointsLeft_t1, pointsLeft_t0, focal, principle_point, cv::RANSAC, 0.999, 1.0, mask);
+    std::cout << E << std::endl;
     cv::recoverPose(E, pointsLeft_t1, pointsLeft_t0, rotation, translation_mono, focal, principle_point, mask);
-    // std::cout << "recoverPose rotation: " << rotation << std::endl;
-
+    //std::cout << "recoverPose rotation: " << rotation << std::endl;
+    int cnt2 = 0;
+    for (auto el : rotation.val) {
+        printf("%.3f ",el);
+        cnt2++;
+        if (cnt2%3==0)
+            std::cout<<"\n";
+    }
     // ------------------------------------------------
     // Translation (t) estimation by use solvePnPRansac
     // ------------------------------------------------
