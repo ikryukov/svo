@@ -11,6 +11,8 @@
 #include "core.h"
 #include "map.h"
 
+#include <opencv2/core/eigen.hpp>
+
 
 int main(int argc, char** argv) {
     // get values from configuration file
@@ -26,9 +28,9 @@ int main(int argc, char** argv) {
     size_t maxRAM = 0;
 
     // parse ground truth file
-    std::vector<cv::Mat> gt_rotations, gt_translations;
+    std::vector<Eigen::Matrix3d> gt_rotations;
+    std::vector<Eigen::Vector3d> gt_translations;
     if (config.show_gt) {
-        std::vector<cv::Mat> gt(config.end_frame);
         std::ifstream fin(config.gt_path);
 
         if (!fin.is_open()) {
@@ -41,17 +43,16 @@ int main(int argc, char** argv) {
             double pose[12] = { 0 };
             for (auto& elem : pose) { ss >> elem; }
 
-            gt_rotations.emplace_back(
-                (cv::Mat_<double>(3, 3) <<
-                    pose[0], pose[1], pose[2],
-                    pose[4], pose[5], pose[6],
-                    pose[8], pose[9], pose[10])
+            gt_rotations.push_back(
+                Eigen::Matrix<double, 3, 3>
+                {
+                    { pose[0], pose[1], pose[2] },
+                    { pose[4], pose[5], pose[6] },
+                    { pose[8], pose[9], pose[10] }
+                }
             );
-            gt_translations.emplace_back(
-                cv::Mat({
-                    pose[3],
-                    pose[7],
-                    pose[11] })
+            gt_translations.push_back(
+                Eigen::Vector3d { pose[3], pose[7], pose[11] }
             );
         }
     }
@@ -77,7 +78,7 @@ int main(int argc, char** argv) {
     const cv::Mat projMatrr = (cv::Mat_<float>(3, 4) << fx, 0., cx, bf, 0., fy, cy, 0., 0, 0., 1., 0.);
 
     auto rotation = cv::Matx33d::eye();
-    auto translation_stereo = cv::Matx31d::zeros();
+    auto translation_stereo = cv::Vec3d::all(0);
 
     cv::Mat pose = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat Rpose = cv::Mat::eye(3, 3, CV_64F);
@@ -85,7 +86,10 @@ int main(int argc, char** argv) {
     // initialize start position with ground truth, for visualisation
     cv::Mat frame_pose;
     if (config.show_gt && config.start_frame != 0) {
-        cv::hconcat(gt_rotations[config.start_frame], gt_translations[config.start_frame], frame_pose);
+        cv::Mat rot, t;
+        cv::eigen2cv(gt_rotations[config.start_frame], rot);
+        cv::eigen2cv(gt_translations[config.start_frame], t);
+        cv::hconcat(rot, t, frame_pose);
         cv::vconcat(frame_pose, cv::Matx<double, 1, 4>(0,0,0,0), frame_pose);
     } else {
         frame_pose = cv::Mat::eye(4, 4, CV_64F);
@@ -98,7 +102,7 @@ int main(int argc, char** argv) {
 
     cv::Mat points4D, points3D;
     FeatureSet currentVOFeatures;
-    Map map;
+    Map map(std::move(gt_rotations), std::move(gt_translations));
 
     std::vector<FeaturePoint> oldFeaturePointsLeft;
     std::vector<FeaturePoint> currentFeaturePointsLeft;
@@ -152,6 +156,9 @@ int main(int argc, char** argv) {
 
         trackingFrame2Frame(
             projMatrl, projMatrr, pointsLeft_t0, pointsLeft_t1, points3D_t0, rotation, translation_stereo);
+
+        std::cout << "-- Translation: " << translation_stereo << std::endl;
+
         displayTracking(imageLeft_t1, pointsLeft_t0, pointsLeft_t1);
 
         points4D = points4D_t0;
@@ -172,29 +179,10 @@ int main(int argc, char** argv) {
         // featureSetToPointCloudsValid(points3D, features_cloud_ptr, valid);
         // mapPointsToPointCloudsAppend(mapPoints, features_cloud_ptr);
 
-        cv::Vec3f rotation_euler = rotationMatrixToEulerAngles(rotation);
-
         cv::Mat rigid_body_transformation;
-        if (abs(rotation_euler[1]) < 0.1 && abs(rotation_euler[0]) < 0.1 && abs(rotation_euler[2]) < 0.1)
-        {
-            integrateOdometryStereo(numFrame, rigid_body_transformation, frame_pose, rotation, translation_stereo);
-        }
-        else
-        {
-            rotation=cv::Matx33d::eye();
-            std::cout << "Too large rotation" << std::endl;
-        }
+        integrateOdometryStereo(numFrame, rigid_body_transformation, frame_pose, rotation, translation_stereo);
+
         map.addPose(rotation, translation_stereo);
-        //logging current pose
-        std::cout << "x: "<< translation_stereo.val[0]
-                  << std::endl << "y: " << translation_stereo.val[1]
-                  << std::endl << "z: " << translation_stereo.val[2] << std::endl;
-        for (double & k : translation_stereo.val){
-            if (abs(k)>1.5) {
-                k=0;
-                std::cout << "JUMP DETECTED\n";
-            }
-        }
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
@@ -223,6 +211,8 @@ int main(int argc, char** argv) {
         total,
         maxRAM
     );
+
+    while (1) {}
 
     return 0;
 }

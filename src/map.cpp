@@ -13,6 +13,14 @@ Map::Map()
     , mDrawer(*this)
 {}
 
+Map::Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations)
+    : mCurrentKeyFrame(new KeyFrame)
+    , mGTRotations(std::move(rotations))
+    , mGTTranslations(std::move(translations))
+    , mThread(run, this)
+    , mDrawer(*this)
+{}
+
 Map::~Map() {
     mIsFinish = true;
     mThread.join();
@@ -57,7 +65,8 @@ MapPoint* Map::getPoint(size_t id) {
 
     if (it == mCurrentKeyFrame->mMapPoints.end()) {
         std::shared_lock allLock(mMapMutex);
-        for (auto* kf : mKeyFrames) {
+        for (auto rit = mKeyFrames.rbegin(); rit != mKeyFrames.rend(); ++rit) {
+            auto* kf = *rit;
             it = std::find_if(kf->mMapPoints.begin(), kf->mMapPoints.end(), [id](auto* mp) {
               return mp->ID == id;
             });

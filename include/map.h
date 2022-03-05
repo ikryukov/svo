@@ -34,6 +34,7 @@ class Map {
 public:
 
     Map();
+    Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations);
 
     ~Map();
 
@@ -62,4 +63,6 @@ private:
     std::atomic<bool> mIsFinish = false;
 
     Drawer mDrawer;
+    std::vector<Eigen::Matrix3d> mGTRotations;
+    std::vector<Eigen::Vector3d> mGTTranslations;
 };

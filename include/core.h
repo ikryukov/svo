@@ -61,13 +61,15 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
                       const Config& config);
 
 
+// Calculates frame to frame transformation
+// returns computed rotation and translation
 void trackingFrame2Frame(const cv::Mat& projMatrl,
                          const cv::Mat& projMatrr,
-                         std::vector<cv::Point2f>& pointsLeft_t0,
-                         std::vector<cv::Point2f>& pointsLeft_t1,
-                         cv::Mat& points3D_t0,
+                         const std::vector<cv::Point2f>& pointsLeft_t0,
+                         const std::vector<cv::Point2f>& pointsLeft_t1,
+                         const cv::Mat& points3D_t0,
                          cv::Matx33d& rotation,
-                         cv::Matx31d& translation);
+                         cv::Vec3d& translation);
 
 
 void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,

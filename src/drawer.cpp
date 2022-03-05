@@ -12,9 +12,39 @@
 #include "map.h"
 
 
+
+__forceinline void drawGroundTruth(const std::vector<Eigen::Isometry3d>& gt) {
+    glBegin(GL_LINES);
+    for (auto& pose : gt)
+    {
+        // draw three axes of each pose
+        Eigen::Vector3d Ow = pose.translation();
+        Eigen::Vector3d Xw = pose * (0.1 * Eigen::Vector3d(1, 0, 0));
+        Eigen::Vector3d Yw = pose * (0.1 * Eigen::Vector3d(0, 1, 0));
+        Eigen::Vector3d Zw = pose * (0.1 * Eigen::Vector3d(0, 0, 1));
+        glColor3f(1.0, 0.0, 0.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Xw[0], Xw[1], Xw[2]);
+        glColor3f(0.0, 1.0, 0.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Yw[0], Yw[1], Yw[2]);
+        glColor3f(0.0, 0.0, 1.0);
+        glVertex3d(Ow[0], Ow[1], Ow[2]);
+        glVertex3d(Zw[0], Zw[1], Zw[2]);
+    }
+    for (size_t i = 1; i < gt.size(); i++)
+    {
+        glColor3f(Drawer::GT_COLOR[0], Drawer::GT_COLOR[1], Drawer::GT_COLOR[2]);
+        auto t1 = gt[i-1].translation(), t2 = gt[i].translation();
+        glVertex3d(t1[0], t1[1], t1[2]);
+        glVertex3d(t2[0], t2[1], t2[2]);
+    }
+    glEnd();
+}
+
 __forceinline void drawMapPoints(const std::vector<MapPoint*>& points) {
     glPointSize(2);
-    glColor4f(0., 0., 1., 1.0);
+    glColor3f(Drawer::MP_COLOR[0], Drawer::MP_COLOR[1], Drawer::MP_COLOR[2]);
     glBegin(GL_POINTS);
 
     for (const MapPoint* mp : points) {
@@ -46,7 +76,7 @@ __forceinline void drawTrajectory(const std::vector<Eigen::Isometry3d>& poses) {
     // draw a connection
     for (size_t i = 1; i < poses.size(); i++)
     {
-        glColor3f(1.0, 1.0, 1.0);
+        glColor3f(Drawer::TRAJ_COLOR[0], Drawer::TRAJ_COLOR[1], Drawer::TRAJ_COLOR[2]);
         auto t1 = poses[i-1].translation(), t2 = poses[i].translation();
         glVertex3d(t1[0], t1[1], t1[2]);
         glVertex3d(t2[0], t2[1], t2[2]);
@@ -72,9 +102,22 @@ Drawer::Drawer(const Map& map)
                                      .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
                                      .SetHandler(&handler);
 
+         std::vector <Eigen::Isometry3d> gt;
+         gt.reserve(mMap.mGTRotations.size());
+
+         for (size_t i = 0; i < mMap.mGTRotations.size(); ++i)
+         {
+             Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+             pose.rotate(mMap.mGTRotations[i]);
+             pose.translation() = mMap.mGTTranslations[i];
+             gt.push_back(pose);
+         }
+
          while(!pangolin::ShouldQuit() && !mIsFinish) {
              glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
              d_cam.Activate(s_cam);
+
+             drawGroundTruth(gt);
 
              {
                  std::shared_lock lock(mMap.mMapMutex);
