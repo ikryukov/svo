@@ -13,6 +13,7 @@
 #include "bucket.h"
 #include "config_reader.h"
 #include "map.h"
+#include "map_point.h"
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -302,42 +303,35 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
                 (oldPoint.mPosOnFrame.y == currentPointsLeft_t0[i].y))
             {
                 exist = true;
-
                 currentFeaturePointsLeft.emplace_back(oldPoint.ID, oldPoint.mAge + 1, currentPointsLeft_t1[i]);
 
-                Eigen::Vector3f pointPoseIn_t1 = { points3DFrame_t1.at<float>(i, 0),
-                                                   points3DFrame_t1.at<float>(i, 1),
-                                                   points3DFrame_t1.at<float>(i, 2) };
-
                 map.getPoint(oldPoint.ID)
-                    ->addObservation({ frameId_t0, pointPoseIn_t1 });
+                    ->addObservation(frameId_t0, currentPointsLeft_t1[i].x, currentPointsLeft_t1[i].y);
                 break;
             }
         }
         if (!exist)
         {
             // add new points to map points
-            Eigen::Vector3f worldPose = { points3DWorld.at<float>(i, 0),
+            Eigen::Vector3d worldPose = { points3DWorld.at<float>(i, 0),
                                           points3DWorld.at<float>(i, 1),
                                           points3DWorld.at<float>(i, 2) };
 
+            MapPoint* mp = map.createMapPoint(worldPose);
+
             // observation from frame t0
-            Observation obs1 {
-                .mFrameId = frameId_t0,
-                .mPointPoseInFrame = { points3DFrame_t0.at<float>(i, 0),
-                                       points3DFrame_t0.at<float>(i, 1),
-                                       points3DFrame_t0.at<float>(i, 2) }
-            };
+            mp->addObservation(
+                frameId_t0,
+                currentPointsLeft_t0[i].x,
+                currentPointsLeft_t0[i].y
+            );
 
             // observation from frame t1
-            Observation obs2 {
-                .mFrameId = frameId_t0 + 1,
-                .mPointPoseInFrame = { points3DFrame_t1.at<float>(i, 0),
-                                       points3DFrame_t1.at<float>(i, 1),
-                                       points3DFrame_t1.at<float>(i, 2) }
-            };
-
-            MapPoint* mp = map.createMapPoint(worldPose, { obs1, obs2 });
+            mp->addObservation(
+                frameId_t0 + 1,
+                currentPointsLeft_t1[i].x,
+                currentPointsLeft_t1[i].y
+            );
 
             newPoints.push_back(currentPointsLeft_t1[i]);
 

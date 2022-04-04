@@ -14,19 +14,11 @@
 #include <opencv2/core/types.hpp>
 
 #include "drawer.h"
-#include "map_point.h"
 
 
-struct KeyFrame {
-    ~KeyFrame() {
-        for (auto* mp : mMapPoints)
-            delete mp;
-    }
-
-    std::vector<MapPoint*> mMapPoints;
-    std::vector<Eigen::Isometry3d> mPoses;
-};
-
+struct KeyFrame;
+class MapPoint;
+class Camera;
 
 class Map {
     friend class Drawer;
@@ -42,10 +34,11 @@ public:
 
     void endKeyFrame();
 
-    MapPoint* getPoint(size_t id);
+    MapPoint* getPoint(size_t id) const;
+    Camera* getCamera(size_t id) const;
 
     MapPoint* createMapPoint();
-    MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
+    MapPoint* createMapPoint(const Eigen::Vector3d& position);
 
     [[nodiscard]] size_t mapPointsSize() const;
 
@@ -54,6 +47,7 @@ private:
     static void run(Map* map);
 
     size_t mLastMapPointId = 0;
+
     std::vector<KeyFrame*> mKeyFrames;
     KeyFrame* mCurrentKeyFrame;
 
