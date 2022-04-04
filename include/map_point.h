@@ -6,12 +6,6 @@
 #include <vector>
 
 
-struct Observation {
-    size_t mFrameId;
-    Eigen::Vector3f mPointPoseInFrame;
-};
-
-
 class MapPoint {
 
     friend class Map;
@@ -20,35 +14,34 @@ public:
 
     const size_t ID;
 
-    MapPoint* addObservation(const Observation& observation) {
-        mObservations.push_back(observation);
+    MapPoint* addObservation(const size_t frameID, const float observed_x, const float observed_y) {
+        mObservations.emplace_back(Observation { frameID, { observed_x, observed_y } });
         return this;
     }
 
-    MapPoint* setPosition(const Eigen::Vector3f& pos) {
+    MapPoint* setPosition(const Eigen::Vector3d& pos) {
         mWorldPos = pos;
         return this;
     }
 
 private:
 
+    struct Observation {
+        size_t mFrameId;
+        Eigen::Vector2f mPointPoseInFrame;
+    };
+
     explicit MapPoint(size_t id)
         : ID(id)
     {}
 
-    MapPoint(size_t id, const Eigen::Vector3f& worldPos)
+    MapPoint(size_t id, const Eigen::Vector3d& worldPos)
         : ID(id)
         , mWorldPos(worldPos)
-    {}
-
-    MapPoint(size_t id, const Eigen::Vector3f& worldPos, const std::vector<Observation>& obss)
-        : ID(id)
-        , mWorldPos(worldPos)
-        , mObservations(obss)
     {}
 
 public:
 
-    Eigen::Vector3f mWorldPos;
+    Eigen::Vector3d mWorldPos;
     std::vector<Observation> mObservations;
 };

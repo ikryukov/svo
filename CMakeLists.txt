@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(readerwriterqueue)
 find_package(Threads REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(Ceres 2.0 REQUIRED)
 
 include_directories(./include)
 
@@ -27,7 +28,7 @@ set(SOURCES ${MyCSources})
 source_group("Source Files" FILES ${SOURCES})
 
 add_executable( ${PROJECT}  ${HEADERS} ${SOURCES} )
-target_link_libraries( ${PROJECT} ${OpenCV_LIBS} Eigen3::Eigen readerwriterqueue pango_display)
+target_link_libraries( ${PROJECT} ${OpenCV_LIBS} Eigen3::Eigen readerwriterqueue pango_display ${CERES_LIBRARIES})
 set_property(TARGET ${PROJECT} PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
@@ -39,6 +40,12 @@ if (MSVC)
     add_custom_command(TARGET ${PROJECT} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_SOURCE_DIR}/external/GLEW/bin/glew32.dll"
+            "$<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}>"
+            "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
+            )
+    add_custom_command(TARGET ${PROJECT} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/external/glog/build/Debug/glogd.dll"
             "$<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}>"
             "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
             )

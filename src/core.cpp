@@ -6,12 +6,14 @@
 #include <opencv2/calib3d.hpp>
 
 #include <iostream>
+#include <algorithm>
 
 #include "core.h"
 #include "utils.h"
 #include "bucket.h"
 #include "config_reader.h"
 #include "map.h"
+#include "map_point.h"
 
 
 void deleteUnmatchFeaturesCircle(std::vector<cv::Point2f>& points0,
@@ -173,7 +175,7 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
     }
 
     // todo set this value in more proper way
-    if (currentVOFeatures.size() < 60)
+    if (currentVOFeatures.size() < 50)
     {
         // detect new features
         std::vector<cv::KeyPoint> keypoints;
@@ -194,7 +196,6 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
     const int bucket_size = 64;
     const int features_per_bucket = 4;
     currentVOFeatures.bucketingFeatures(imageLeft_t0, bucket_size, features_per_bucket);
-
     pointsLeft_t0 = currentVOFeatures.points;
 
     std::vector<cv::Point2f> pointsLeftReturn_t0; // feature points to check cicular mathcing validation
@@ -215,14 +216,12 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
 
 void trackingFrame2Frame(const cv::Mat& projMatrl,
                          const cv::Mat& projMatrr,
-                         std::vector<cv::Point2f>& pointsLeft_t0,
-                         std::vector<cv::Point2f>& pointsLeft_t1,
-                         cv::Mat& points3D_t0,
+                         const std::vector<cv::Point2f>& pointsLeft_t0,
+                         const std::vector<cv::Point2f>& pointsLeft_t1,
+                         const cv::Mat& points3D_t0,
                          cv::Matx33d& rotation,
-                         cv::Matx31d& translation)
+                         cv::Vec3d& translation)
 {
-    // Calculate frame to frame transformation
-
     // -----------------------------------------------------------
     // Rotation(R) estimation using Nister's Five Points Algorithm
     // -----------------------------------------------------------
@@ -233,9 +232,17 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
     cv::Mat E, mask;
     cv::Mat translation_mono = cv::Mat::zeros(3, 1, CV_64F);
     E = cv::findEssentialMat(pointsLeft_t1, pointsLeft_t0, focal, principle_point, cv::RANSAC, 0.999, 1.0, mask);
-    cv::recoverPose(E, pointsLeft_t1, pointsLeft_t0, rotation, translation_mono, focal, principle_point, mask);
-    // std::cout << "recoverPose rotation: " << rotation << std::endl;
 
+    cv::Matx33d rot;
+    cv::recoverPose(E, pointsLeft_t1, pointsLeft_t0, rot, translation_mono, focal, principle_point, mask);
+
+    // will not update rotation if it's too large
+    auto rotation_euler = rotationMatrixToEulerAngles(rot);
+    if (abs(rotation_euler[1]) < 0.1 && abs(rotation_euler[0]) < 0.1 && abs(rotation_euler[2]) < 0.1) {
+        rotation = rot;
+    } else {
+        std::cout << "-! Too large rotation, rotation ignored" << std::endl;
+    }
     // ------------------------------------------------
     // Translation (t) estimation by use solvePnPRansac
     // ------------------------------------------------
@@ -247,17 +254,27 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
          projMatrl.at<float>(1, 0), projMatrl.at<float>(1, 1), projMatrl.at<float>(1, 2), projMatrl.at<float>(1, 1),
          projMatrl.at<float>(1, 2), projMatrl.at<float>(1, 3));
 
-    int iterationsCount = 100; // number of Ransac iterations.
+    int iterationsCount = 150; // number of Ransac iterations.
     float reprojectionError = 2.0; // maximum allowed distance to consider it an inlier.
-    float confidence = 0.99; // RANSAC successful confidence.
+    float confidence = 0.999; // RANSAC successful confidence.
     bool useExtrinsicGuess = true;
     int flags = cv::SOLVEPNP_ITERATIVE;
 
-    cv::solvePnPRansac(points3D_t0, pointsLeft_t1, intrinsic_matrix, distCoeffs, rvec, translation, useExtrinsicGuess,
+    cv::Vec3d tvec;
+    cv::solvePnPRansac(points3D_t0, pointsLeft_t1, intrinsic_matrix, distCoeffs, rvec, tvec, useExtrinsicGuess,
                        iterationsCount, reprojectionError, confidence, inliers, flags);
+    tvec = -tvec;
 
-    translation = -translation;
-//    std::cout << "-- inliers size: " << inliers.size() << std::endl;
+    auto delta = cv::Vec3d{ std::abs(tvec(0) - translation(0)),
+                            std::abs(tvec(1) - translation(1)),
+                            std::abs(tvec(2) - translation(2)) };
+
+    // will not change translation if jump detected
+    if (std::any_of(std::begin(delta.val), std::end(delta.val), [](auto e) { return e > 2.; })) { // TODO need to adjust
+        std::cout << "-! Jump detected, translation: " << tvec << " ignored" << std::endl;
+    } else {
+        translation = tvec;
+    }
 }
 
 
@@ -286,42 +303,35 @@ void distinguishNewPoints(std::vector<cv::Point2f>& newPoints,
                 (oldPoint.mPosOnFrame.y == currentPointsLeft_t0[i].y))
             {
                 exist = true;
-
                 currentFeaturePointsLeft.emplace_back(oldPoint.ID, oldPoint.mAge + 1, currentPointsLeft_t1[i]);
 
-                Eigen::Vector3f pointPoseIn_t1 = { points3DFrame_t1.at<float>(i, 0),
-                                                   points3DFrame_t1.at<float>(i, 1),
-                                                   points3DFrame_t1.at<float>(i, 2) };
-
                 map.getPoint(oldPoint.ID)
-                    ->addObservation({ frameId_t0, pointPoseIn_t1 });
+                    ->addObservation(frameId_t0, currentPointsLeft_t1[i].x, currentPointsLeft_t1[i].y);
                 break;
             }
         }
         if (!exist)
         {
             // add new points to map points
-            Eigen::Vector3f worldPose = { points3DWorld.at<float>(i, 0),
+            Eigen::Vector3d worldPose = { points3DWorld.at<float>(i, 0),
                                           points3DWorld.at<float>(i, 1),
                                           points3DWorld.at<float>(i, 2) };
 
+            MapPoint* mp = map.createMapPoint(worldPose);
+
             // observation from frame t0
-            Observation obs1 {
-                .mFrameId = frameId_t0,
-                .mPointPoseInFrame = { points3DFrame_t0.at<float>(i, 0),
-                                       points3DFrame_t0.at<float>(i, 1),
-                                       points3DFrame_t0.at<float>(i, 2) }
-            };
+            mp->addObservation(
+                frameId_t0,
+                currentPointsLeft_t0[i].x,
+                currentPointsLeft_t0[i].y
+            );
 
             // observation from frame t1
-            Observation obs2 {
-                .mFrameId = frameId_t0 + 1,
-                .mPointPoseInFrame = { points3DFrame_t1.at<float>(i, 0),
-                                       points3DFrame_t1.at<float>(i, 1),
-                                       points3DFrame_t1.at<float>(i, 2) }
-            };
-
-            MapPoint* mp = map.createMapPoint(worldPose, { obs1, obs2 });
+            mp->addObservation(
+                frameId_t0 + 1,
+                currentPointsLeft_t1[i].x,
+                currentPointsLeft_t1[i].y
+            );
 
             newPoints.push_back(currentPointsLeft_t1[i]);
 
