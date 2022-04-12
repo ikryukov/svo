@@ -13,3 +13,12 @@ cd build
 cmake .. -DCMAKE_CXX_STANDARD=20 -DMSVC_USE_STATIC_CRT=0 -DGLEW_INCLUDE_DIR="../../GLEW/include" -DGLEW_LIBRARY="../../GLEW/lib/glew32.lib" -DCMAKE_BUILD_TYPE="Debug" -DBUILD_EXAMPLES=0 -DBUILD_TOOLS=0 -DBUILD_TESTS=0
 cmake --build . -j8 --config Debug
 cmake --build . --target=install
+
+
+echo "building fbow..."
+cd ../../fbow
+md build
+cd build
+cmake .. -DBUILD_UTILS=OFF -DBUILD_TESTS=OFF -DCMAKE_CXX_STANDARD=11 -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_CXX_FLAGS="/MDd"
+cmake --build . -j8 --config Debug
+cmake --build . --target install

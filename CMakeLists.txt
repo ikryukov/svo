@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(readerwriterqueue)
 find_package(Threads REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(fbow REQUIRED)
 
 include_directories(./include)
 
@@ -27,7 +28,7 @@ set(SOURCES ${MyCSources})
 source_group("Source Files" FILES ${SOURCES})
 
 add_executable( ${PROJECT}  ${HEADERS} ${SOURCES} )
-target_link_libraries( ${PROJECT} ${OpenCV_LIBS} Eigen3::Eigen readerwriterqueue pango_display)
+target_link_libraries( ${PROJECT} ${OpenCV_LIBS} ${fbow_LIBS} Eigen3::Eigen readerwriterqueue pango_display)
 set_property(TARGET ${PROJECT} PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 

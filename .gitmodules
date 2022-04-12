@@ -4,3 +4,6 @@
 [submodule "external/pangolin"]
 	path = external/pangolin
 	url = https://github.com/stevenlovegrove/Pangolin
+[submodule "external/fbow"]
+	path = external/fbow
+	url = https://github.com/rmsalinas/fbow
