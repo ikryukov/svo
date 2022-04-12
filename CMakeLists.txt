@@ -37,6 +37,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIRECTORY}/Debug)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIRECTORY}/Release)
 
 if (MSVC)
+    add_compile_definitions(NOMINMAX)
+
     add_custom_command(TARGET ${PROJECT} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_SOURCE_DIR}/external/GLEW/bin/glew32.dll"
