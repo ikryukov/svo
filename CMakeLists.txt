@@ -45,6 +45,12 @@ if (MSVC)
             "$<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}>"
             "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
             )
+    add_custom_command(TARGET ${PROJECT} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/external/fbow/build/bin/Debug/fbow001.dll"
+            "$<$<CONFIG:Debug>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG}>"
+            "$<$<CONFIG:Release>:${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE}>"
+            )
 endif ()
 
 # Set working directory
