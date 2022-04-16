@@ -237,7 +237,7 @@ void trackingFrame2Frame(const cv::Mat& projMatrl,
 
     // will not update rotation if it's too large
     auto rotation_euler = rotationMatrixToEulerAngles(rot);
-    if (abs(rotation_euler[1]) < 0.1 && abs(rotation_euler[0]) < 0.1 && abs(rotation_euler[2]) < 0.1) {
+    if (abs(rotation_euler[1]) < 0.1 && abs(rotation_euler[0]) < 0.1 && abs(rotation_euler[2]) < 0.1) { // TODO need to adjust
         rotation = rot;
     } else {
         std::cout << "-! Too large rotation, rotation ignored" << std::endl;

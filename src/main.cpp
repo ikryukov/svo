@@ -212,7 +212,5 @@ int main(int argc, char** argv) {
         maxRAM
     );
 
-    while (1) {}
-
     return 0;
 }
