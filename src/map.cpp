@@ -8,14 +8,12 @@
 
 
 Map::Map()
-    : mCurrentKeyFrame(new KeyFrame)
-    , mThread(run, this)
+    : mThread(run, this)
     , mDrawer(*this)
 {}
 
 Map::Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations)
-    : mCurrentKeyFrame(new KeyFrame)
-    , mGTRotations(std::move(rotations))
+    : mGTRotations(std::move(rotations))
     , mGTTranslations(std::move(translations))
     , mThread(run, this)
     , mDrawer(*this)
@@ -30,35 +28,39 @@ Map::~Map() {
     }
 }
 
-void Map::addPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& translation) {
-    Eigen::Matrix<double, 3, 3> rotationEigen;
-    cv::cv2eigen(rotation, rotationEigen);
-    Eigen::Vector3d translationEigen { translation(0), translation(1), translation(2) };
+void Map::addCamera(size_t frameID, const cv::Matx33d& rotmat, const cv::Matx31d& tvec) {
+    Eigen::Matrix3d rotationEigen;
+    cv::cv2eigen(rotmat, rotationEigen);
+    Eigen::Vector3d translationEigen { tvec(0), tvec(1), tvec(2) };
 
-    auto lastPose = Eigen::Isometry3d::Identity();
-    if (std::shared_lock lock1(mCurrentKFMutex); !mCurrentKeyFrame->mPoses.empty()) {
-        lastPose = mCurrentKeyFrame->mPoses.back();
-    } else if (std::shared_lock lock2(mMapMutex); !mKeyFrames.empty()) {
-        lastPose = mKeyFrames.back()->mPoses.back();
+    // Pick last known camera pose
+    Eigen::Isometry3d lastPose = mAllCameras.empty() ? Eigen::Isometry3d::Identity()
+                                                     : mAllCameras.back()->mCameraPose;
+
+    // Transform to new position
+    lastPose.rotate(rotationEigen).translate(translationEigen);
+
+    Camera* newCamera;
+    if (mCurrentKeyFrame->ID == frameID) {
+        mCurrentKeyFrame->mCameraPose = lastPose;
+        {
+            std::unique_lock lock(mMapMutex);
+            mKeyFrames.push_back(mCurrentKeyFrame);
+        }
+        newCamera = mCurrentKeyFrame;
+    } else {
+        newCamera = new Camera{ frameID, lastPose };
     }
 
-    std::unique_lock lock(mCurrentKFMutex);
-    mCurrentKeyFrame->mPoses.push_back(lastPose.rotate(rotationEigen).translate(translationEigen));
+    std::unique_lock lock(mMapMutex);
+    mAllCameras.push_back(newCamera);
 }
 
-void Map::endKeyFrame() {
-    if (mCurrentKeyFrame->mMapPoints.empty()) return;
-
-    {
-        std::unique_lock lock(mMapMutex);
-        mKeyFrames.push_back(mCurrentKeyFrame);
-    }
-
-    mCurrentKeyFrame = new KeyFrame;
+void Map::prepareKeyFrame(size_t frameID) {
+    mCurrentKeyFrame = new KeyFrame{ frameID };
 }
 
 MapPoint* Map::getPoint(size_t id) {
-    std::shared_lock currentLock(mCurrentKFMutex);
     auto it = std::find_if(mCurrentKeyFrame->mMapPoints.begin(), mCurrentKeyFrame->mMapPoints.end(), [id](auto& mp) {
       return mp->ID == id;
     });
@@ -77,19 +79,8 @@ MapPoint* Map::getPoint(size_t id) {
     return *it;
 }
 
-MapPoint* Map::createMapPoint() {
-    {
-        std::unique_lock lock(mCurrentKFMutex);
-        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++));
-    }
-    return mCurrentKeyFrame->mMapPoints.back();
-}
-
 MapPoint* Map::createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations) {
-    {
-        std::unique_lock lock(mCurrentKFMutex);
-        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++, position, observations));
-    }
+    mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++, position, observations));
     return mCurrentKeyFrame->mMapPoints.back();
 }
 
@@ -102,9 +93,7 @@ size_t Map::mapPointsSize() const {
         }
     }
 
-    std::shared_lock lock1(mCurrentKFMutex);
-    res += mCurrentKeyFrame->mMapPoints.size();
-    return res;
+    return res + mCurrentKeyFrame->mMapPoints.size();
 }
 
 void Map::run(Map* map) {

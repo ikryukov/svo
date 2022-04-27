@@ -17,14 +17,33 @@
 #include "map_point.h"
 
 
-struct KeyFrame {
+struct Camera {
+    size_t ID;
+
+    explicit Camera(size_t frameID)
+        : ID(frameID)
+    {}
+
+    Camera(size_t frameID, const Eigen::Isometry3d& pose)
+        : ID(frameID)
+        , mCameraPose(pose)
+    {}
+
+    Eigen::Isometry3d mCameraPose;
+};
+
+struct KeyFrame : public Camera {
+
+    explicit KeyFrame(size_t frameID)
+        : Camera(frameID)
+    {}
+
     ~KeyFrame() {
         for (auto* mp : mMapPoints)
             delete mp;
     }
 
     std::vector<MapPoint*> mMapPoints;
-    std::vector<Eigen::Isometry3d> mPoses;
 };
 
 
@@ -38,13 +57,12 @@ public:
 
     ~Map();
 
-    void addPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& translation);
+    void addCamera(size_t frameID, const cv::Matx33d& rotmat, const cv::Matx31d& tvec);
 
-    void endKeyFrame();
+    void prepareKeyFrame(size_t frameID);
 
     MapPoint* getPoint(size_t id);
 
-    MapPoint* createMapPoint();
     MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
 
     [[nodiscard]] size_t mapPointsSize() const;
@@ -53,11 +71,12 @@ private:
 
     static void run(Map* map);
 
-    size_t mLastMapPointId = 0;
+    std::vector<Camera*> mAllCameras;
     std::vector<KeyFrame*> mKeyFrames;
-    KeyFrame* mCurrentKeyFrame;
+    KeyFrame* mCurrentKeyFrame = nullptr;   // Points to the last known keyframe
 
-    mutable std::shared_mutex mCurrentKFMutex;
+    size_t mLastMapPointId = 0;
+
     mutable std::shared_mutex mMapMutex;
     std::thread mThread;
     std::atomic<bool> mIsFinish = false;

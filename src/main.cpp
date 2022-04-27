@@ -116,17 +116,14 @@ int main(int argc, char** argv) {
         // Load images
         // ------------
         cv::Mat imageLeft_t1, imageRight_t1;
-
         if (!async_image_loader.get(imageLeft_t1, imageRight_t1)) {
             std::cout << " --(!) Error reading images " << std::endl;
             break;
         }
 
-//        std::vector<cv::Point2f> oldPointsLeft_t0 = currentVOFeatures.points;
-
         std::vector<cv::Point2f> pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1;
 
-        matchingFeatures(imageLeft_t0, imageRight_t0, imageLeft_t1, imageRight_t1, currentVOFeatures,
+        matchingFeatures(numFrame, imageLeft_t0, imageRight_t0, imageLeft_t1, imageRight_t1, currentVOFeatures,
                          pointsLeft_t0, pointsRight_t0, pointsLeft_t1, pointsRight_t1, map, config);
 
         imageLeft_t0 = imageLeft_t1;
@@ -135,24 +132,17 @@ int main(int argc, char** argv) {
         std::vector<cv::Point2f>& currentPointsLeft_t0 = pointsLeft_t0;
         std::vector<cv::Point2f>& currentPointsLeft_t1 = pointsLeft_t1;
 
-//        std::cout << "oldPointsLeft_t0 size : " << oldPointsLeft_t0.size() << std::endl;
-//        std::cout << "currentFramePointsLeft size : " << currentPointsLeft_t0.size() << std::endl;
-
         // ---------------------
         // Triangulate 3D Points
         // ---------------------
         cv::Mat points3D_t0, points4D_t0;
         cv::triangulatePoints(projMatrl, projMatrr, pointsLeft_t0, pointsRight_t0, points4D_t0);
         cv::convertPointsFromHomogeneous(points4D_t0.t(), points3D_t0);
-        // std::cout << "points4D_t0 size : " << points4D_t0.size() << std::endl;
 
         cv::Mat points3D_t1, points4D_t1;
-        // std::cout << "pointsLeft_t1 size : " << pointsLeft_t1.size() << std::endl;
-        // std::cout << "pointsRight_t1 size : " << pointsRight_t1.size() << std::endl;
 
         cv::triangulatePoints(projMatrl, projMatrr, pointsLeft_t1, pointsRight_t1, points4D_t1);
         cv::convertPointsFromHomogeneous(points4D_t1.t(), points3D_t1);
-        // std::cout << "points4D_t1 size : " << points4D_t1.size() << std::endl;
 
         trackingFrame2Frame(
             projMatrl, projMatrr, pointsLeft_t0, pointsLeft_t1, points3D_t0, rotation, translation_stereo);
@@ -173,16 +163,10 @@ int main(int argc, char** argv) {
         oldFeaturePointsLeft = currentFeaturePointsLeft;
         std::printf("-- Map points size: %llu\n", map.mapPointsSize());
 
-        // ------------------------------------------------
-        // Append feature points to Point clouds
-        // ------------------------------------------------
-        // featureSetToPointCloudsValid(points3D, features_cloud_ptr, valid);
-        // mapPointsToPointCloudsAppend(mapPoints, features_cloud_ptr);
-
         cv::Mat rigid_body_transformation;
         integrateOdometryStereo(numFrame, rigid_body_transformation, frame_pose, rotation, translation_stereo);
 
-        map.addPose(rotation, translation_stereo);
+        map.addCamera(numFrame, rotation, translation_stereo);
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
