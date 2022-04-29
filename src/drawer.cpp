@@ -12,7 +12,7 @@
 #include "map.h"
 
 
-__forceinline void drawGroundTruth(const std::vector<Eigen::Isometry3d>& gt) {
+inline void drawGroundTruth(const std::vector<Eigen::Isometry3d>& gt) {
     glBegin(GL_LINES);
     for (auto& pose : gt)
     {
@@ -41,7 +41,7 @@ __forceinline void drawGroundTruth(const std::vector<Eigen::Isometry3d>& gt) {
     glEnd();
 }
 
-__forceinline void drawMapPoints(const std::vector<MapPoint*>& points) {
+inline void drawMapPoints(const std::vector<MapPoint*>& points) {
     glPointSize(2);
     glColor3f(Drawer::MP_COLOR[0], Drawer::MP_COLOR[1], Drawer::MP_COLOR[2]);
     glBegin(GL_POINTS);
@@ -53,13 +53,13 @@ __forceinline void drawMapPoints(const std::vector<MapPoint*>& points) {
     glEnd();
 }
 
-__forceinline void drawTrajectory(const std::vector<Camera*>& cameras) {
+inline void drawTrajectory(const std::vector<Frame*>& frames) {
     glBegin(GL_LINES);
-    for (auto& cam : cameras)
+    for (auto& f : frames)
     {
-        const auto& pose = cam->mCameraPose;
+        const auto& pose = f->mCameraPose;
         // draw three axes of each pose
-        Eigen::Vector3d Ow = pose.translation();
+        const auto& Ow = pose.translation();
         Eigen::Vector3d Xw = pose * (0.1 * Eigen::Vector3d(1, 0, 0));
         Eigen::Vector3d Yw = pose * (0.1 * Eigen::Vector3d(0, 1, 0));
         Eigen::Vector3d Zw = pose * (0.1 * Eigen::Vector3d(0, 0, 1));
@@ -74,13 +74,25 @@ __forceinline void drawTrajectory(const std::vector<Camera*>& cameras) {
         glVertex3d(Zw[0], Zw[1], Zw[2]);
     }
     // draw a connection
-    for (size_t i = 1; i < cameras.size(); i++)
+    for (size_t i = 1; i < frames.size(); i++)
     {
         glColor3f(Drawer::TRAJ_COLOR[0], Drawer::TRAJ_COLOR[1], Drawer::TRAJ_COLOR[2]);
-        auto t1 = cameras[i-1]->mCameraPose.translation(),
-             t2 = cameras[i]->mCameraPose.translation();
+        const auto& t1 = frames[i-1]->mCameraPose.translation(),
+                    t2 = frames[i]->mCameraPose.translation();
         glVertex3d(t1[0], t1[1], t1[2]);
         glVertex3d(t2[0], t2[1], t2[2]);
+    }
+    glEnd();
+
+    // mark keyframes
+    glPointSize(7);
+    glColor3f(Drawer::KF_COLOR[0], Drawer::KF_COLOR[1], Drawer::KF_COLOR[2]);
+    glBegin(GL_POINTS);
+    for (auto& f : frames) {
+        if (f->isKeyFrame) {
+            const auto& Ow = f->mCameraPose.translation();
+            glVertex3d(Ow[0], Ow[1], Ow[2]);
+        }
     }
     glEnd();
 }
@@ -122,9 +134,8 @@ Drawer::Drawer(const Map& map)
 
             {
                 std::shared_lock lock(mMap.mMapMutex);
-                drawTrajectory(mMap.mAllCameras);
-                for (auto kf : mMap.mKeyFrames)
-                    drawMapPoints(kf->mMapPoints);
+                drawTrajectory(mMap.mAllFrames);
+                drawMapPoints(mMap.mMapPoints);
             }
 
             pangolin::FinishFrame();

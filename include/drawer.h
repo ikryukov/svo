@@ -14,6 +14,7 @@ class Map;
 class Drawer {
 public:
 
+    static constexpr float KF_COLOR[] = { 1., 1., 0. };     // Yellow
     static constexpr float GT_COLOR[] = { 0., 1., 0. };     // Green
     static constexpr float TRAJ_COLOR[] = { 1., 1., 1. };   // White
     static constexpr float MP_COLOR[] = { 0., 0., 1. };     // Blue

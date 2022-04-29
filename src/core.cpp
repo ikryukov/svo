@@ -190,7 +190,7 @@ void matchingFeatures(size_t frameID,
         std::cout << "-- Current feature set size: " << currentVOFeatures.points.size() << std::endl;
 
         // mark current frame as keyframe
-        map.prepareKeyFrame(frameID);
+        map.createKeyFrame(frameID);
     }
 
     const int bucket_size = 64;

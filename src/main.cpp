@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
         cv::Mat rigid_body_transformation;
         integrateOdometryStereo(numFrame, rigid_body_transformation, frame_pose, rotation, translation_stereo);
 
-        map.addCamera(numFrame, rotation, translation_stereo);
+        map.updatePosition(numFrame, rotation, translation_stereo);
 
         double frameTime = Timer::get<Timer::seconds>(frameStart).count();
         totalFramesTime += frameTime;
