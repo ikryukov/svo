@@ -8,14 +8,12 @@
 
 
 Map::Map()
-    : mCurrentKeyFrame(new KeyFrame)
-    , mThread(run, this)
+    : mThread(run, this)
     , mDrawer(*this)
 {}
 
 Map::Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations)
-    : mCurrentKeyFrame(new KeyFrame)
-    , mGTRotations(std::move(rotations))
+    : mGTRotations(std::move(rotations))
     , mGTTranslations(std::move(translations))
     , mThread(run, this)
     , mDrawer(*this)
@@ -25,86 +23,64 @@ Map::~Map() {
     mIsFinish = true;
     mThread.join();
 
-    for (auto* kf : mKeyFrames) {
-        delete kf;
+    for (auto* f : mAllFrames) {
+        delete f;
+    }
+    for (auto* mp : mMapPoints) {
+        delete mp;
     }
 }
 
-void Map::addPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& translation) {
-    Eigen::Matrix<double, 3, 3> rotationEigen;
-    cv::cv2eigen(rotation, rotationEigen);
-    Eigen::Vector3d translationEigen { translation(0), translation(1), translation(2) };
+void Map::updatePosition(size_t frameID, const cv::Matx33d& rotmat, const cv::Matx31d& tvec) {
+    Eigen::Matrix3d rotationEigen;
+    cv::cv2eigen(rotmat, rotationEigen);
+    Eigen::Vector3d translationEigen { tvec(0), tvec(1), tvec(2) };
 
-    auto lastPose = Eigen::Isometry3d::Identity();
-    if (std::shared_lock lock1(mCurrentKFMutex); !mCurrentKeyFrame->mPoses.empty()) {
-        lastPose = mCurrentKeyFrame->mPoses.back();
-    } else if (std::shared_lock lock2(mMapMutex); !mKeyFrames.empty()) {
-        lastPose = mKeyFrames.back()->mPoses.back();
-    }
-
-    std::unique_lock lock(mCurrentKFMutex);
-    mCurrentKeyFrame->mPoses.push_back(lastPose.rotate(rotationEigen).translate(translationEigen));
-}
-
-void Map::endKeyFrame() {
-    if (mCurrentKeyFrame->mMapPoints.empty()) return;
-
+    // Pick last known camera pose
+    Eigen::Isometry3d lastPose;
     {
-        std::unique_lock lock(mMapMutex);
-        mKeyFrames.push_back(mCurrentKeyFrame);
+        std::shared_lock lock(mMapMutex);
+        lastPose = mAllFrames.empty() ? Eigen::Isometry3d::Identity()
+                                      : mAllFrames.back()->mCameraPose;
     }
 
-    mCurrentKeyFrame = new KeyFrame;
+    // Transform to new position
+    lastPose.rotate(rotationEigen).translate(translationEigen);
+
+    Frame* newFrame;
+    if (mCurrentKeyFrame->ID == frameID) {
+        mCurrentKeyFrame->mCameraPose = lastPose;
+        {
+            std::unique_lock lock(mMapMutex);
+            mKeyFrames.push_back(mCurrentKeyFrame);
+        }
+        newFrame = mCurrentKeyFrame;
+    } else {
+        newFrame = new Frame{ frameID, false, lastPose };
+    }
+
+    std::unique_lock lock(mMapMutex);
+    mAllFrames.push_back(newFrame);
+}
+
+void Map::createKeyFrame(size_t frameID) {
+    mCurrentKeyFrame = new Frame{ frameID, true };
 }
 
 MapPoint* Map::getPoint(size_t id) {
-    std::shared_lock currentLock(mCurrentKFMutex);
-    auto it = std::find_if(mCurrentKeyFrame->mMapPoints.begin(), mCurrentKeyFrame->mMapPoints.end(), [id](auto& mp) {
-      return mp->ID == id;
-    });
-
-    if (it == mCurrentKeyFrame->mMapPoints.end()) {
-        std::shared_lock allLock(mMapMutex);
-        for (auto rit = mKeyFrames.rbegin(); rit != mKeyFrames.rend(); ++rit) {
-            auto* kf = *rit;
-            it = std::find_if(kf->mMapPoints.begin(), kf->mMapPoints.end(), [id](auto* mp) {
-              return mp->ID == id;
-            });
-            if (it != kf->mMapPoints.end()) break;
-        }
-    }
-
-    return *it;
-}
-
-MapPoint* Map::createMapPoint() {
-    {
-        std::unique_lock lock(mCurrentKFMutex);
-        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++));
-    }
-    return mCurrentKeyFrame->mMapPoints.back();
+    std::shared_lock allLock(mMapMutex);
+    return id < mMapPoints.size() ? mMapPoints[id] : nullptr;
 }
 
 MapPoint* Map::createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations) {
-    {
-        std::unique_lock lock(mCurrentKFMutex);
-        mCurrentKeyFrame->mMapPoints.push_back(new MapPoint(mLastMapPointId++, position, observations));
-    }
-    return mCurrentKeyFrame->mMapPoints.back();
+    std::unique_lock lock(mMapMutex);
+    mMapPoints.push_back(new MapPoint(mMapPoints.size(), position, observations));
+    return mMapPoints.back();
 }
 
 size_t Map::mapPointsSize() const {
-    size_t res = 0;
-    {
-        std::shared_lock lock(mMapMutex);
-        for (auto& kf : mKeyFrames) {
-            res += kf->mMapPoints.size();
-        }
-    }
-
-    std::shared_lock lock1(mCurrentKFMutex);
-    res += mCurrentKeyFrame->mMapPoints.size();
-    return res;
+    std::shared_lock lock(mMapMutex);
+    return mMapPoints.size();
 }
 
 void Map::run(Map* map) {

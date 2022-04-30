@@ -17,14 +17,10 @@
 #include "map_point.h"
 
 
-struct KeyFrame {
-    ~KeyFrame() {
-        for (auto* mp : mMapPoints)
-            delete mp;
-    }
-
-    std::vector<MapPoint*> mMapPoints;
-    std::vector<Eigen::Isometry3d> mPoses;
+struct Frame {
+    size_t ID;
+    bool isKeyFrame = false;
+    Eigen::Isometry3d mCameraPose;
 };
 
 
@@ -38,13 +34,12 @@ public:
 
     ~Map();
 
-    void addPose(const cv::Matx<double, 3, 3>& rotation, const cv::Matx<double, 3, 1>& translation);
+    void updatePosition(size_t frameID, const cv::Matx33d& rotmat, const cv::Matx31d& tvec);
 
-    void endKeyFrame();
+    void createKeyFrame(size_t frameID);
 
     MapPoint* getPoint(size_t id);
 
-    MapPoint* createMapPoint();
     MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
 
     [[nodiscard]] size_t mapPointsSize() const;
@@ -53,11 +48,11 @@ private:
 
     static void run(Map* map);
 
-    size_t mLastMapPointId = 0;
-    std::vector<KeyFrame*> mKeyFrames;
-    KeyFrame* mCurrentKeyFrame;
+    std::vector<Frame*> mAllFrames;
+    std::vector<Frame*> mKeyFrames;
+    std::vector<MapPoint*> mMapPoints;
+    Frame* mCurrentKeyFrame = nullptr;   // Points to the last known keyframe
 
-    mutable std::shared_mutex mCurrentKFMutex;
     mutable std::shared_mutex mMapMutex;
     std::thread mThread;
     std::atomic<bool> mIsFinish = false;

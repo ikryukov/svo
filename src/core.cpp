@@ -132,7 +132,8 @@ void removeInvalidPoints(std::vector<cv::Point2f>& points, const std::vector<boo
 }
 
 
-void matchingFeatures(cv::Mat& imageLeft_t0,
+void matchingFeatures(size_t frameID,
+                      cv::Mat& imageLeft_t0,
                       cv::Mat& imageRight_t0,
                       cv::Mat& imageLeft_t1,
                       cv::Mat& imageRight_t1,
@@ -188,8 +189,8 @@ void matchingFeatures(cv::Mat& imageLeft_t0,
         currentVOFeatures.appendNewFeatures(new_features);
         std::cout << "-- Current feature set size: " << currentVOFeatures.points.size() << std::endl;
 
-        // end current key frame, start new
-        map.endKeyFrame();
+        // mark current frame as keyframe
+        map.createKeyFrame(frameID);
     }
 
     const int bucket_size = 64;
