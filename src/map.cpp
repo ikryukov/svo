@@ -23,8 +23,11 @@ Map::~Map() {
     mIsFinish = true;
     mThread.join();
 
-    for (auto* kf : mKeyFrames) {
-        delete kf;
+    for (auto* f : mAllFrames) {
+        delete f;
+    }
+    for (auto* mp : mMapPoints) {
+        delete mp;
     }
 }
 
