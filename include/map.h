@@ -13,6 +13,8 @@
 
 #include <opencv2/core/types.hpp>
 
+#include "fbow/fbow.h"
+
 #include "drawer.h"
 #include "map_point.h"
 
@@ -38,6 +40,8 @@ public:
 
     void createKeyFrame(size_t frameID);
 
+    void addDescriptor(cv::Mat& descriptor);
+
     MapPoint* getPoint(size_t id);
 
     MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
@@ -58,6 +62,11 @@ private:
     std::atomic<bool> mIsFinish = false;
 
     Drawer mDrawer;
+
+    fbow::Vocabulary vocab;
+    std::vector<cv::Mat> mDescriptors;
+    size_t mDescriptorsLoopChecked=1;
+
     std::vector<Eigen::Matrix3d> mGTRotations;
     std::vector<Eigen::Vector3d> mGTTranslations;
 };

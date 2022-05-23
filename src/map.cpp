@@ -10,14 +10,17 @@
 Map::Map()
     : mThread(run, this)
     , mDrawer(*this)
-{}
+{
+}
 
 Map::Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations)
     : mGTRotations(std::move(rotations))
     , mGTTranslations(std::move(translations))
     , mThread(run, this)
     , mDrawer(*this)
-{}
+{
+    vocab.readFromFile("F:\\repos\\svo\\orb_mur.fbow");
+}
 
 Map::~Map() {
     mIsFinish = true;
@@ -67,6 +70,10 @@ void Map::createKeyFrame(size_t frameID) {
     mCurrentKeyFrame = new Frame{ frameID, true };
 }
 
+void Map::addDescriptor(cv::Mat& descriptor) {
+    mDescriptors.push_back(descriptor);
+}
+
 MapPoint* Map::getPoint(size_t id) {
     std::shared_lock allLock(mMapMutex);
     return id < mMapPoints.size() ? mMapPoints[id] : nullptr;
@@ -86,5 +93,25 @@ size_t Map::mapPointsSize() const {
 void Map::run(Map* map) {
     while (!map->mIsFinish) {
         // TODO optimization part here
+
+        // Loop Closure
+        if (map->mDescriptors.size() > map->mDescriptorsLoopChecked && map->mDescriptors.size()>5)
+        {
+            fbow::fBow vv, vv2;
+            cv::Mat cur_descriptor = map->mDescriptors[map->mDescriptors.size() - 1];
+            vv = map->vocab.transform(cur_descriptor);
+            for (size_t i = 0; i < map->mDescriptors.size() - 1; i++)
+            {
+                vv2 = map->vocab.transform(map->mDescriptors[i]);
+                double score = fbow::fBow::score(vv, vv2);
+                if (score > 0.7)
+                {
+                    std::cout << "LOOP DETECTED\n score: " << score << std::endl;
+                    std::cout << "equal key frame index: " << i << std::endl
+                             << "number of keyframes: " << map->mDescriptors.size() << std::endl;
+                }
+            }
+            map->mDescriptorsLoopChecked++;
+        }
     }
 }

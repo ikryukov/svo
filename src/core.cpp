@@ -180,8 +180,10 @@ void matchingFeatures(size_t frameID,
         // detect new features
         std::vector<cv::KeyPoint> keypoints;
         std::vector<cv::Point2f> new_features;
+        cv::Mat descriptor;
         auto t = Timer::set();
-        detector->detect(imageLeft_t0, keypoints);
+        detector->detectAndCompute(imageLeft_t0, cv::Mat(),keypoints, descriptor);
+        map.addDescriptor(descriptor);
         std::cout << "-T Detection time: " << Timer::get(t).count() << "ms" << std::endl;
         cv::KeyPoint::convert(keypoints, new_features, std::vector<int>());
 
