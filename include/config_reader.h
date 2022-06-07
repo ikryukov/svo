@@ -36,6 +36,11 @@ struct Config {
         int threshold = 20;
         bool nonMaxSuppression = true;
     } fast_params;
+
+    struct {
+        float y_threshold = 40;
+        int features_to_track = 70;
+    } tracking;
 };
 
 class ConfigReader {
@@ -58,6 +63,10 @@ public:
                 fs["gt_path"] >> config.gt_path;
                 fs["use_orb"] >> config.use_orb;
                 fs["calib_path"] >> config.calib_path;
+
+                cv::FileNode tracking = fs["tracking_params"];
+                tracking["y_threshold"] >> config.tracking.y_threshold;
+                tracking["features_to_track"] >> config.tracking.features_to_track;
 
                 cv::FileNode orb_params = fs["orb_params"];
                 orb_params["nfeatures"] >> config.orb_params.nfeatures;

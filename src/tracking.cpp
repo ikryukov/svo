@@ -66,7 +66,8 @@ StereoFrame* Tracking::nextFrame() {
         return nullptr;
     }
 
-    bool isKeyFrame = (lastFrameID == 0) || (!prevFrame->isKeyFrame() && prevFrame->countPts() < 70);
+    bool isKeyFrame = (lastFrameID == 0) ||
+                      (!prevFrame->isKeyFrame() && prevFrame->countPts() < mConfig.tracking.features_to_track);
     return new StereoFrame(lastFrameID++, isKeyFrame, std::move(imageLeft), std::move(imageRight));
 }
 
@@ -90,7 +91,7 @@ void Tracking::extractFeatures(StereoFrame* frame) {
     findLeftFeaturesInRight(frame);
 }
 
-void Tracking::findLeftFeaturesInRight(StereoFrame* frame) {
+void Tracking::findLeftFeaturesInRight(StereoFrame* frame) const {
     std::vector<Feature::Ptr> newLeftFeatures, newRightFeatures;
     std::vector<cv::Point2f> rightPoints;
 
@@ -106,7 +107,7 @@ void Tracking::findLeftFeaturesInRight(StereoFrame* frame) {
     newLeftFeatures.reserve(status.size());
     newRightFeatures.reserve(status.size());
     for (size_t i = 0; i < status.size(); ++i) {
-        if (status[i] && (std::abs(rightPoints[i].y - frame->leftFeatures()[i]->pos.y) < 40)) {
+        if (status[i] && (std::abs(rightPoints[i].y - frame->leftFeatures()[i]->pos.y) < mConfig.tracking.y_threshold)) {
             newLeftFeatures.push_back(frame->leftFeatures()[i]);
             newRightFeatures.push_back(Feature::Create(rightPoints[i], frame->leftFeatures()[i]->mapPoint));
         }

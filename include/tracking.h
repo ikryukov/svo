@@ -37,7 +37,7 @@ private:
     void calculatePose(StereoFrame* frame);
 
     /// Fill frame with features that observable from BOTH left and right eyes
-    static void findLeftFeaturesInRight(StereoFrame* frame);
+    void findLeftFeaturesInRight(StereoFrame* frame) const;
 
     /// Extracts features from left eye.
     void extractFeatures(StereoFrame* frame);

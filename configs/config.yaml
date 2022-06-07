@@ -11,6 +11,11 @@ cx: 607.1928
 cy: 185.2157
 bf: -386.1448
 
+tracking_params: {
+        features_to_track: 70,
+        y_threshold: 40.0
+    }
+
 # If 1, use ORB as feature detector, otherwise FAST
 use_orb: 1
 orb_params: {
