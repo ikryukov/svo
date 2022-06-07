@@ -9,10 +9,13 @@
 #include <exception>
 #include <opencv2/core.hpp>
 
+
 struct Config {
     std::string path;
     std::string gt_path;
-    double focal;
+    std::string calib_path;
+    double fx;
+    double fy;
     double cx;
     double cy;
     double bf;
@@ -39,12 +42,13 @@ class ConfigReader {
 private:
     Config config;
 public:
-    explicit ConfigReader(std::string& filename) {
+    explicit ConfigReader(const std::string& filename) {
         try {
             cv::FileStorage fs(filename, cv::FileStorage::READ);
             if (fs.isOpened()) {
                 fs["path"] >> config.path;
-                fs["focal"] >> config.focal;
+                fs["fx"] >> config.fx;
+                fs["fy"] >> config.fy;
                 fs["cx"] >> config.cx;
                 fs["cy"] >> config.cy;
                 fs["bf"] >> config.bf;
@@ -53,6 +57,7 @@ public:
                 fs["show_gt"] >> config.show_gt;
                 fs["gt_path"] >> config.gt_path;
                 fs["use_orb"] >> config.use_orb;
+                fs["calib_path"] >> config.calib_path;
 
                 cv::FileNode orb_params = fs["orb_params"];
                 orb_params["nfeatures"] >> config.orb_params.nfeatures;
@@ -71,8 +76,7 @@ public:
             }
         }
         catch (std::exception& e) {
-            std::cout << "Wrong config file!" << std::endl;
-            std::cout << e.what();
+            std::cout << "Wrong config file!: " << e.what() << std::endl;
         }
     }
     [[nodiscard]] const Config& getConfig() const

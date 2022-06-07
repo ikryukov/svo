@@ -2,8 +2,9 @@
 // Created by Alexey on 17.01.2022.
 //
 
+#include "utils.h"
+
 #include <opencv2/core/mat.hpp>
-#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -14,66 +15,15 @@
 #include "Psapi.h"
 #endif
 
-#include "utils.h"
 
+void displayPoints(cv::Mat img, const std::vector<cv::Point2f>& pts) {
+    cv::cvtColor(img, img, cv::COLOR_GRAY2BGR, 3);
 
-bool isRotationMatrix(cv::Matx<double, 3, 3>& R) {
-    cv::Mat Rt;
-    cv::transpose(R, Rt);
-    cv::Mat shouldBeIdentity = Rt * R;
-    cv::Mat I = cv::Mat::eye(3, 3, shouldBeIdentity.type());
-
-    return cv::norm(I, shouldBeIdentity) < 1e-6;
-}
-
-cv::Vec3f rotationMatrixToEulerAngles(cv::Matx<double, 3, 3>& R) {
-    assert(isRotationMatrix(R));
-
-    float sy = sqrt(R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0));
-
-    bool singular = sy < 1e-6; // If
-
-    float x, y, z;
-    if (!singular)
-    {
-        x = atan2(R(2, 1), R(2, 2));
-        y = atan2(-R(2, 0), sy);
-        z = atan2(R(1, 0), R(0, 0));
-    }
-    else
-    {
-        x = atan2(-R(1, 2), R(1, 1));
-        y = atan2(-R(2, 0), sy);
-        z = 0;
-    }
-    return cv::Vec3f(x, y, z);
-}
-
-void displayTracking(cv::Mat& imageLeft_t1, std::vector<cv::Point2f>& pointsLeft_t0, std::vector<cv::Point2f>& pointsLeft_t1) {
-    // -----------------------------------------
-    // Display feature racking
-    // -----------------------------------------
-    int radius = 2;
-    cv::Mat vis;
-
-    cv::cvtColor(imageLeft_t1, vis, cv::COLOR_GRAY2BGR, 3);
-
-    for (int i = 0; i < pointsLeft_t0.size(); i++)
-    {
-        cv::circle(vis, cv::Point2f(pointsLeft_t0[i].x, pointsLeft_t0[i].y), radius, CV_RGB(0, 255, 0));
+    for (const auto& p : pts) {
+        cv::circle(img, p, 3, CV_RGB(0, 255, 0));
     }
 
-    for (int i = 0; i < pointsLeft_t1.size(); i++)
-    {
-        cv::circle(vis, cv::Point2f(pointsLeft_t1[i].x, pointsLeft_t1[i].y), radius, CV_RGB(255, 0, 0));
-    }
-
-    for (int i = 0; i < pointsLeft_t1.size(); i++)
-    {
-        cv::line(vis, pointsLeft_t0[i], pointsLeft_t1[i], CV_RGB(0, 255, 0));
-    }
-
-    cv::imshow("vis ", vis);
+    cv::imshow("Features viewer", img);
     cv::waitKey(1);
 }
 

@@ -21,7 +21,7 @@ void FeatureSet::appendNewFeatures(const std::vector<cv::Point2f>& features) {
     ages.insert(ages.end(), ages_new.begin(), ages_new.end());
 }
 
-void FeatureSet::bucketingFeatures(cv::Mat& image, int bucket_size, int features_per_bucket) {
+void FeatureSet::bucketingFeatures(const cv::Mat& image, int bucket_size, int features_per_bucket) {
     // This function buckets features
     // image: only use for getting dimension of the image
     // bucket_size: bucket size in pixel is bucket_size*bucket_size

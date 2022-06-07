@@ -1,10 +1,12 @@
 %YAML:1.0
 path: "./datasets/kitti/data_odometry_color/dataset/sequences/00/"
 gt_path: "./datasets/kitti/data_odometry_poses/dataset/poses/00.txt"
+calib_path: "./datasets/kitti/data_calib/sequences/00/calib.txt"
 start_frame: 0
 end_frame: 4540
 show_gt: true
-focal: 718.8560
+fx: 718.8560
+fy: 718.8560
 cx: 607.1928
 cy: 185.2157
 bf: -386.1448
@@ -12,7 +14,7 @@ bf: -386.1448
 # If 1, use ORB as feature detector, otherwise FAST
 use_orb: 1
 orb_params: {
-        nfeatures: 500,
+        nfeatures: 150,
         scale_factor: 1.2,
         pyr_levels: 8,
         patch_size: 31,
