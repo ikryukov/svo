@@ -4,60 +4,53 @@
 
 #pragma once
 
+#include "drawer.h"
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <opencv2/core/types.hpp>
+
 #include <atomic>
 #include <shared_mutex>
 #include <vector>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 
-#include <opencv2/core/types.hpp>
-
-#include "drawer.h"
-#include "map_point.h"
-
-
-struct Frame {
-    size_t ID;
-    bool isKeyFrame = false;
-    Eigen::Isometry3d mCameraPose;
-};
+struct Config;
+class Frame;
+class MapPoint;
 
 
 class Map {
     friend class Drawer;
+    friend class Tracking;
 
 public:
 
-    Map();
-    Map(std::vector<Eigen::Matrix3d> rotations, std::vector<Eigen::Vector3d> translations);
+    explicit Map(const Config& config);
 
     ~Map();
 
-    void updatePosition(size_t frameID, const cv::Matx33d& rotmat, const cv::Matx31d& tvec);
+    void addFrame(Frame* frame);
 
-    void createKeyFrame(size_t frameID);
-
-    MapPoint* getPoint(size_t id);
-
-    MapPoint* createMapPoint(const Eigen::Vector3f& position, const std::vector<Observation>& observations = {});
+    MapPoint* createMapPoint(const Eigen::Vector3d& position);
 
     [[nodiscard]] size_t mapPointsSize() const;
 
 private:
+    static std::vector<Eigen::Isometry3d> parseGroundTruth(const Config& config);
 
     static void run(Map* map);
 
+    const Config& mConfig;
+
     std::vector<Frame*> mAllFrames;
-    std::vector<Frame*> mKeyFrames;
+    std::unordered_map<size_t, Frame*> mKeyFrames;
     std::vector<MapPoint*> mMapPoints;
-    Frame* mCurrentKeyFrame = nullptr;   // Points to the last known keyframe
 
     mutable std::shared_mutex mMapMutex;
     std::thread mThread;
     std::atomic<bool> mIsFinish = false;
 
     Drawer mDrawer;
-    std::vector<Eigen::Matrix3d> mGTRotations;
-    std::vector<Eigen::Vector3d> mGTTranslations;
+    std::vector<Eigen::Isometry3d> mGTPoses; // Ground Truth
 };

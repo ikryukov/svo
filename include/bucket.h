@@ -23,7 +23,7 @@ struct FeatureSet {
     void clear();
 
     void appendNewFeatures(const std::vector<cv::Point2f>& features);
-    void bucketingFeatures(cv::Mat& image, int bucket_size, int features_per_bucket);
+    void bucketingFeatures(const cv::Mat& image, int bucket_size, int features_per_bucket);
 
     friend class Bucket;
 

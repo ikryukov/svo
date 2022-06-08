@@ -1,54 +1,32 @@
 
 #pragma once
 
+#include "feature.h"
+
 #include <Eigen/Core>
 
 #include <vector>
 
 
-struct Observation {
-    size_t mFrameId;
-    Eigen::Vector3f mPointPoseInFrame;
-};
-
-
 class MapPoint {
-
     friend class Map;
 
 public:
-
     const size_t ID;
 
-    MapPoint* addObservation(const Observation& observation) {
-        mObservations.push_back(observation);
-        return this;
-    }
-
-    MapPoint* setPosition(const Eigen::Vector3f& pos) {
-        mWorldPos = pos;
-        return this;
+    inline void addObservation(size_t frame_id, const Feature::Ptr& obs) {
+        mObservations.insert({frame_id, obs});
     }
 
 private:
 
-    explicit MapPoint(size_t id)
-        : ID(id)
-    {}
-
-    MapPoint(size_t id, const Eigen::Vector3f& worldPos)
+    inline MapPoint(size_t id, const Eigen::Vector3d& worldPos)
         : ID(id)
         , mWorldPos(worldPos)
-    {}
-
-    MapPoint(size_t id, const Eigen::Vector3f& worldPos, const std::vector<Observation>& obss)
-        : ID(id)
-        , mWorldPos(worldPos)
-        , mObservations(obss)
     {}
 
 public:
 
-    Eigen::Vector3f mWorldPos;
-    std::vector<Observation> mObservations;
+    Eigen::Vector3d mWorldPos;
+    std::unordered_map<size_t, Feature::Ptr> mObservations;
 };

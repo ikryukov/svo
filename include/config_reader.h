@@ -9,10 +9,13 @@
 #include <exception>
 #include <opencv2/core.hpp>
 
+
 struct Config {
     std::string path;
     std::string gt_path;
-    double focal;
+    std::string calib_path;
+    double fx;
+    double fy;
     double cx;
     double cy;
     double bf;
@@ -33,18 +36,24 @@ struct Config {
         int threshold = 20;
         bool nonMaxSuppression = true;
     } fast_params;
+
+    struct {
+        float y_threshold = 40;
+        int features_to_track = 70;
+    } tracking;
 };
 
 class ConfigReader {
 private:
     Config config;
 public:
-    explicit ConfigReader(std::string& filename) {
+    explicit ConfigReader(const std::string& filename) {
         try {
             cv::FileStorage fs(filename, cv::FileStorage::READ);
             if (fs.isOpened()) {
                 fs["path"] >> config.path;
-                fs["focal"] >> config.focal;
+                fs["fx"] >> config.fx;
+                fs["fy"] >> config.fy;
                 fs["cx"] >> config.cx;
                 fs["cy"] >> config.cy;
                 fs["bf"] >> config.bf;
@@ -53,6 +62,11 @@ public:
                 fs["show_gt"] >> config.show_gt;
                 fs["gt_path"] >> config.gt_path;
                 fs["use_orb"] >> config.use_orb;
+                fs["calib_path"] >> config.calib_path;
+
+                cv::FileNode tracking = fs["tracking_params"];
+                tracking["y_threshold"] >> config.tracking.y_threshold;
+                tracking["features_to_track"] >> config.tracking.features_to_track;
 
                 cv::FileNode orb_params = fs["orb_params"];
                 orb_params["nfeatures"] >> config.orb_params.nfeatures;
@@ -71,8 +85,7 @@ public:
             }
         }
         catch (std::exception& e) {
-            std::cout << "Wrong config file!" << std::endl;
-            std::cout << e.what();
+            std::cout << "Wrong config file!: " << e.what() << std::endl;
         }
     }
     [[nodiscard]] const Config& getConfig() const

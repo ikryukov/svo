@@ -18,28 +18,31 @@ using moodycamel::ReaderWriterQueue;
 class AsyncImageLoader {
 public:
     explicit AsyncImageLoader(const std::string& folder, size_t start_frame,
-                              size_t last_frame, bool color = true):
-            mQueue(last_frame - start_frame)
-          , mDatasetFolder(folder)
-          , mIsColor(color)
-          , mThread([=]() {
-              for(size_t i = start_frame; (i < last_frame) && !mIsFinish; ++i) {
-                  cv::Mat l, r;
-                  syncLoad(i, l, r);
-                  mQueue.emplace(std::move(l), std::move(r));
-              }
-          })
+                              size_t last_frame, bool color = true)
+        : curr(start_frame)
+        , end(last_frame)
+        , mQueue(last_frame - start_frame)
+        , mDatasetFolder(folder)
+        , mIsColor(color)
+        , mThread([start_frame, last_frame, this]() {
+            for(size_t i = start_frame; (i < last_frame) && !mIsFinish; ++i) {
+                cv::Mat l, r;
+                syncLoad(i, l, r);
+                mQueue.emplace(std::move(l), std::move(r));
+            }
+        })
     {}
 
     bool get(cv::Mat& left, cv::Mat& right) {
+        if (curr == end) return false;
         std::pair<cv::Mat, cv::Mat> temp{};
-
         while (!mQueue.peek()) {}
 
         bool res = mQueue.try_dequeue(temp);
         left = std::move(temp.first);
         right = std::move(temp.second);
 
+        curr++;
         return res;
     }
 
@@ -68,6 +71,7 @@ private:
         return imgDst.data;
     }
 
+    size_t curr, end;
     std::atomic<bool> mIsFinish = false;
     ReaderWriterQueue<std::pair<cv::Mat, cv::Mat>> mQueue;
     std::thread mThread;
